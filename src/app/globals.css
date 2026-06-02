@@ -1,0 +1,127 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-primary: #0f1117;
+  --bg-secondary: #1a1d27;
+  --bg-tertiary: #22263a;
+  --border: #2e3352;
+  --accent-blue: #4f7cff;
+  --accent-purple: #7c5cfc;
+  --text-primary: #e8eaf6;
+  --text-secondary: #8b93b8;
+}
+
+.theme-light {
+  --bg-primary: #f1f3f9;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f8fafc;
+  --border: #cbd5e1;
+  --accent-blue: #3b82f6;
+  --accent-purple: #6366f1;
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+}
+
+/* Light mode overrides for Tailwind arbitrary classes */
+.theme-light .bg-\[\#0f1117\] { background-color: var(--bg-primary) !important; }
+.theme-light .bg-\[\#1a1d27\] { background-color: var(--bg-secondary) !important; }
+.theme-light .bg-\[\#22263a\] { background-color: var(--bg-tertiary) !important; }
+.theme-light .bg-\[\#151821\] { background-color: var(--bg-secondary) !important; }
+.theme-light .bg-\[\#11151f\] { background-color: var(--bg-primary) !important; }
+.theme-light .bg-\[\#1e2235\] { background-color: var(--bg-tertiary) !important; }
+.theme-light .bg-\[\#1b1f32\] { background-color: var(--bg-tertiary) !important; }
+.theme-light .bg-\[\#11151f\]\/40 { background-color: rgba(0, 0, 0, 0.03) !important; }
+
+.theme-light .border-\[\#2e3352\] { border-color: var(--border) !important; }
+.theme-light .border-r-\[\#2e3352\] { border-right-color: var(--border) !important; }
+.theme-light .border-b-\[\#2e3352\] { border-bottom-color: var(--border) !important; }
+.theme-light .border-t-\[\#2e3352\] { border-top-color: var(--border) !important; }
+.theme-light .border-\[\#2e3352\]\/30 { border-color: rgba(203, 213, 225, 0.3) !important; }
+.theme-light .border-\[\#2e3352\]\/40 { border-color: rgba(203, 213, 225, 0.4) !important; }
+.theme-light .border-\[\#2e3352\]\/50 { border-color: rgba(203, 213, 225, 0.5) !important; }
+.theme-light .border-\[\#4f7cff\]\/40 { border-color: rgba(59, 130, 246, 0.4) !important; }
+
+.theme-light .text-\[\#e8eaf6\] { color: var(--text-primary) !important; }
+.theme-light .text-\[\#8b93b8\] { color: var(--text-secondary) !important; }
+.theme-light .hover\:text-\[\#e8eaf6\]:hover { color: var(--text-primary) !important; }
+.theme-light .hover\:bg-\[\#22263a\]:hover { background-color: var(--bg-primary) !important; }
+
+/* Overriding white transparent grids and hover styles in light mode */
+.theme-light .bg-white\/\[0\.02\] { background-color: rgba(0, 0, 0, 0.02) !important; }
+.theme-light .bg-white\/\[0\.015\] { background-color: rgba(0, 0, 0, 0.015) !important; }
+.theme-light .bg-white\/5 { background-color: rgba(0, 0, 0, 0.04) !important; }
+.theme-light .bg-white\/10 { background-color: rgba(0, 0, 0, 0.06) !important; }
+.theme-light .hover\:bg-white\/5:hover { background-color: rgba(0, 0, 0, 0.04) !important; }
+.theme-light .bg-\[\#1a1d27\]\/80 { background-color: rgba(255, 255, 255, 0.85) !important; }
+.theme-light .bg-\[\#151821\]\/80 { background-color: rgba(255, 255, 255, 0.85) !important; }
+
+/* Ensure correct colors inside select lists */
+.theme-light select option {
+  background-color: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+/* Specific elements adjust */
+.theme-light input, 
+.theme-light select, 
+.theme-light textarea {
+  color: var(--text-primary) !important;
+}
+.theme-light input::placeholder, 
+.theme-light textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: 'DM Sans', system-ui, sans-serif;
+  height: 100%;
+  overflow: hidden;
+}
+
+#__next {
+  height: 100%;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #3e4570;
+}
+
+/* Custom Autocomplete / Autofill overrides to prevent browser from applying ugly backgrounds */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus, 
+input:-webkit-autofill:active {
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: var(--text-primary) !important;
+  transition: background-color 5000s ease-in-out 0s;
+  box-shadow: inset 0 0 20px 20px #000000 !important;
+}
+
+.theme-light input:-webkit-autofill,
+.theme-light input:-webkit-autofill:hover, 
+.theme-light input:-webkit-autofill:focus, 
+.theme-light input:-webkit-autofill:active {
+  box-shadow: inset 0 0 20px 20px #ffffff !important;
+}
