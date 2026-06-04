@@ -259,11 +259,252 @@ async function runMigrations(pool: sql.ConnectionPool) {
   }
 }
 
+let isMockMode = false;
+
+class MockRequest {
+  transaction: any;
+  inputs: Record<string, any> = {};
+  constructor(transaction?: any) {
+    this.transaction = transaction;
+  }
+  input(name: string, type: any, value?: any) {
+    if (value === undefined) {
+      this.inputs[name] = type;
+    } else {
+      this.inputs[name] = value;
+    }
+    return this;
+  }
+  async query(queryStr: string) {
+    return handleMockQuery(queryStr, this.inputs);
+  }
+}
+
+class MockTransaction {
+  pool: any;
+  constructor(pool: any) {
+    this.pool = pool;
+  }
+  async begin() {
+    return this;
+  }
+  async commit() {
+    return this;
+  }
+  async rollback() {
+    return this;
+  }
+}
+
+class MockConnectionPool {
+  async connect() {
+    return this;
+  }
+  request() {
+    return new MockRequest();
+  }
+}
+
+async function handleMockQuery<T = any>(
+  query: string,
+  params?: Record<string, any>
+): Promise<sql.IResult<T>> {
+  const normalizedQuery = query.replace(/\s+/g, ' ').trim().toUpperCase();
+
+  // 1. SELECT ... FROM Users WHERE email = @email
+  if (normalizedQuery.includes("USERS") && normalizedQuery.includes("WHERE EMAIL =")) {
+    const emailParam = params?.email || "";
+    const emailVal = typeof emailParam === "string" ? emailParam.trim().toLowerCase() : "";
+
+    // Buscar si es René Rangel
+    if (emailVal === "renerangel@royaltransports.com.mx") {
+      const reneHash = await bcrypt.hash(sha256('Royal1234'), 10);
+      const user = {
+        id: "u_rene",
+        name: "René de Jesús Rangel Buitrón",
+        email: "renerangel@royaltransports.com.mx",
+        initials: "RR",
+        color: "#7c5cfc",
+        role: "Project Manager",
+        contractType: "Fijo",
+        status: "active",
+        password: reneHash,
+        availableHours: 40,
+        skills: JSON.stringify(['React', 'TypeScript', 'SQL']),
+        mustChangePassword: false,
+        loginAttempts: 0,
+        lockoutUntil: null,
+        imageUrl: undefined
+      };
+      return {
+        recordset: [user] as any,
+        recordsets: [[user]] as any,
+        rowsAffected: [1],
+        output: {}
+      };
+    }
+
+    // Buscar en otros mockUsers
+    const foundUser = mockUsers.find(u => u.email.trim().toLowerCase() === emailVal || u.email.split('@')[0] === emailVal.split('@')[0]);
+    if (foundUser) {
+      const defaultHash = await bcrypt.hash(sha256('Royal1234'), 10);
+      const user = {
+        ...foundUser,
+        password: defaultHash,
+        availableHours: 40,
+        skills: JSON.stringify([]),
+        mustChangePassword: false,
+        loginAttempts: 0,
+        lockoutUntil: null
+      };
+      return {
+        recordset: [user] as any,
+        recordsets: [[user]] as any,
+        rowsAffected: [1],
+        output: {}
+      };
+    }
+
+    return {
+      recordset: [] as any,
+      recordsets: [[]] as any,
+      rowsAffected: [0],
+      output: {}
+    };
+  }
+
+  // 2. SELECT ... FROM Users
+  if (normalizedQuery.includes("USERS")) {
+    const defaultHash = await bcrypt.hash(sha256('Royal1234'), 10);
+    const users = mockUsers.map(u => ({
+      ...u,
+      password: defaultHash,
+      skills: JSON.stringify([]),
+      availableHours: 40,
+      totalAssignedHours: 0
+    }));
+
+    // Asegurarse de incluir a René Rangel
+    if (!users.some(u => u.id === "u_rene")) {
+      users.push({
+        id: "u_rene",
+        name: "René de Jesús Rangel Buitrón",
+        email: "renerangel@royaltransports.com.mx",
+        initials: "RR",
+        color: "#7c5cfc",
+        role: "Project Manager",
+        contractType: "Fijo",
+        status: "active",
+        password: defaultHash,
+        availableHours: 40,
+        skills: JSON.stringify(['React', 'TypeScript', 'SQL']),
+        totalAssignedHours: 0
+      } as any);
+    }
+
+    return {
+      recordset: users as any,
+      recordsets: [users] as any,
+      rowsAffected: [users.length],
+      output: {}
+    };
+  }
+
+  // 3. SELECT ... FROM Projects
+  if (normalizedQuery.includes("PROJECTS")) {
+    return {
+      recordset: mockProjects as any,
+      recordsets: [mockProjects] as any,
+      rowsAffected: [mockProjects.length],
+      output: {}
+    };
+  }
+
+  // 4. SELECT ... FROM Phases
+  if (normalizedQuery.includes("PHASES")) {
+    return {
+      recordset: mockPhases as any,
+      recordsets: [mockPhases] as any,
+      rowsAffected: [mockPhases.length],
+      output: {}
+    };
+  }
+
+  // 5. SELECT ... FROM Milestones
+  if (normalizedQuery.includes("MILESTONES")) {
+    return {
+      recordset: mockMilestones as any,
+      recordsets: [mockMilestones] as any,
+      rowsAffected: [mockMilestones.length],
+      output: {}
+    };
+  }
+
+  // 6. SELECT ... FROM TaskAssignees
+  if (normalizedQuery.includes("TASKASSIGNEES")) {
+    const list = mockTasks.map(t => ({ taskId: t.id, userId: t.assigneeId }));
+    return {
+      recordset: list as any,
+      recordsets: [list] as any,
+      rowsAffected: [list.length],
+      output: {}
+    };
+  }
+
+  // 7. SELECT ... FROM TaskComments
+  if (normalizedQuery.includes("TASKCOMMENTS")) {
+    return {
+      recordset: [] as any,
+      recordsets: [[]] as any,
+      rowsAffected: [0],
+      output: {}
+    };
+  }
+
+  // 8. SELECT ... FROM Tasks
+  if (normalizedQuery.includes("TASKS")) {
+    return {
+      recordset: mockTasks as any,
+      recordsets: [mockTasks] as any,
+      rowsAffected: [mockTasks.length],
+      output: {}
+    };
+  }
+
+  // 9. SELECT ... FROM Notifications
+  if (normalizedQuery.includes("NOTIFICATIONS")) {
+    return {
+      recordset: [] as any,
+      recordsets: [[]] as any,
+      rowsAffected: [0],
+      output: {}
+    };
+  }
+
+  // 10. Fallback genérico para INSERT, UPDATE, DELETE, etc.
+  return {
+    recordset: [] as any,
+    recordsets: [[]] as any,
+    rowsAffected: [1],
+    output: {}
+  };
+}
+
 async function connectAndSeed(): Promise<sql.ConnectionPool> {
-  const pool = await sql.connect(config);
-  await runMigrations(pool);
-  await seedDatabase(pool);
-  return pool;
+  try {
+    const pool = await sql.connect(config);
+    await runMigrations(pool);
+    await seedDatabase(pool);
+    return pool;
+  } catch (err: any) {
+    console.warn("⚠️ No se pudo conectar a la base de datos SQL Server. Iniciando en MODO DEMO/FALLBACK...", err.message);
+    isMockMode = true;
+    // @ts-ignore
+    sql.Transaction = MockTransaction;
+    // @ts-ignore
+    sql.Request = MockRequest;
+    return new MockConnectionPool() as any;
+  }
 }
 
 if (process.env.NODE_ENV === 'production') {
@@ -290,16 +531,31 @@ export async function executeQuery<T = any>(
   query: string,
   params?: Record<string, { type: any; value: any }>
 ): Promise<sql.IResult<T>> {
-  const pool = await getDbPool();
-  const request = pool.request();
+  try {
+    const pool = await getDbPool();
+    const request = pool.request();
 
-  if (params) {
-    Object.entries(params).forEach(([name, param]) => {
-      request.input(name, param.value);
-    });
+    if (params) {
+      Object.entries(params).forEach(([name, param]) => {
+        request.input(name, param.value);
+      });
+    }
+
+    return await request.query<T>(query);
+  } catch (error: any) {
+    if (isMockMode) {
+      // Extraemos los valores de los parámetros para handleMockQuery
+      const mockParams: Record<string, any> = {};
+      if (params) {
+        Object.entries(params).forEach(([name, param]) => {
+          mockParams[name] = param.value;
+        });
+      }
+      return await handleMockQuery<T>(query, mockParams);
+    }
+    throw error;
   }
-
-  return request.query<T>(query);
 }
 
 export { sql };
+
