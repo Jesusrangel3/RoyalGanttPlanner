@@ -196,6 +196,48 @@ export default function Home() {
         document.documentElement.classList.remove("theme-light");
       }
     }
+
+    // ─── SSO: Login Único desde la Suite Royal Hub ────────────────────────────
+    // Si el Gantt está embebido en un iframe, la Suite envía las credenciales
+    // via postMessage para que el usuario no tenga que autenticarse de nuevo.
+    async function handleSSOMessage(event: MessageEvent) {
+      if (!event.data || event.data.type !== "ROYAL_HUB_SSO") return;
+      const { email, password } = event.data;
+      if (!email || !password) return;
+
+      // Solo hacer auto-login si NO hay sesión activa ya
+      const existingSession = getSessionUser();
+      if (existingSession) return;
+
+      try {
+        // Importar hashPassword para enviar el hash correcto al servidor
+        const { hashPassword } = await import("@/lib/utils");
+        const clientHash = await hashPassword(password);
+
+        const res = await window.fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: email.trim().toLowerCase(), password: clientHash }),
+        });
+
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!data.success || !data.user) return;
+
+        // Login exitoso: guardar sesión y cargar datos
+        const { saveSessionUser } = await import("@/lib/auth");
+        saveSessionUser(data.user);
+        setUser(data.user);
+        loadInitialData(data.user.id);
+      } catch (err) {
+        // Si falla el SSO no interrumpir — el usuario puede hacer login manualmente
+        console.warn("[SSO Gantt] No se pudo hacer auto-login:", err);
+      }
+    }
+
+    window.addEventListener("message", handleSSOMessage);
+    return () => window.removeEventListener("message", handleSSOMessage);
+    // ─────────────────────────────────────────────────────────────────────────
   }, []);
 
   useEffect(() => {
