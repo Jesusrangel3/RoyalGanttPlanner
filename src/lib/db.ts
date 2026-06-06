@@ -316,21 +316,38 @@ async function handleMockQuery<T = any>(
     const emailParam = params?.email || "";
     const emailVal = typeof emailParam === "string" ? emailParam.trim().toLowerCase() : "";
 
-    // Buscar si es René Rangel
-    if (emailVal === "renerangel@royaltransports.com.mx") {
-      const reneHash = await bcrypt.hash(sha256('Royal1234'), 10);
-      const user = {
+    // Usuarios de respaldo con sus contraseñas reales (modo demo/fallback sin BD)
+    const fallbackUsers: Record<string, { id: string; name: string; email: string; initials: string; color: string; role: string; password: string }> = {
+      "renerangel@royaltransports.com.mx": {
         id: "u_rene",
         name: "René de Jesús Rangel Buitrón",
         email: "renerangel@royaltransports.com.mx",
         initials: "RR",
         color: "#7c5cfc",
         role: "Project Manager",
+        password: sha256('Royal1234'),
+      },
+      "jesus@royaltransports.com.mx": {
+        id: "u_jesus",
+        name: "Jesús Sánchez",
+        email: "jesus@royaltransports.com.mx",
+        initials: "JS",
+        color: "#D4A017",
+        role: "Administrador",
+        password: sha256('@Jsanchez546'),
+      },
+    };
+
+    const fallback = fallbackUsers[emailVal];
+    if (fallback) {
+      const serverHash = await bcrypt.hash(fallback.password, 10);
+      const user = {
+        ...fallback,
+        password: serverHash,
         contractType: "Fijo",
         status: "active",
-        password: reneHash,
         availableHours: 40,
-        skills: JSON.stringify(['React', 'TypeScript', 'SQL']),
+        skills: JSON.stringify([]),
         mustChangePassword: false,
         loginAttempts: 0,
         lockoutUntil: null,
@@ -398,6 +415,24 @@ async function handleMockQuery<T = any>(
         password: defaultHash,
         availableHours: 40,
         skills: JSON.stringify(['React', 'TypeScript', 'SQL']),
+        totalAssignedHours: 0
+      } as any);
+    }
+
+    // Asegurarse de incluir a Jesús Sánchez
+    if (!users.some(u => u.id === "u_jesus")) {
+      users.push({
+        id: "u_jesus",
+        name: "Jesús Sánchez",
+        email: "jesus@royaltransports.com.mx",
+        initials: "JS",
+        color: "#D4A017",
+        role: "Administrador",
+        contractType: "Fijo",
+        status: "active",
+        password: defaultHash,
+        availableHours: 40,
+        skills: JSON.stringify([]),
         totalAssignedHours: 0
       } as any);
     }
