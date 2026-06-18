@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { io } from "socket.io-client";
-import { LayoutDashboard, Trello, Calendar, Users, LogOut, BarChart2, Plus, Target, X, Bell, Check, Trash2, MessageSquare, AlertTriangle, Briefcase, Sun, Moon } from "lucide-react";
+import { LayoutDashboard, Trello, Calendar, Users, LogOut, BarChart2, Plus, Target, X, Bell, Check, Trash2, MessageSquare, AlertTriangle, Briefcase, Sun, Moon, StickyNote, Activity } from "lucide-react";
 import AuthView from "@/components/AuthView";
 import ChangePasswordView from "@/components/ChangePasswordView";
 import GanttView from "@/components/views/GanttView";
@@ -11,6 +11,8 @@ import CalendarView from "@/components/views/CalendarView";
 import ReportsView from "@/components/views/ReportsView";
 import UsersView from "@/components/views/UsersView";
 import ProjectsView from "@/components/views/ProjectsView";
+import NotesView from "@/components/views/NotesView";
+import ActivityView from "@/components/views/ActivityView";
 import { AuthUser, clearSession, getSessionUser, saveSessionUser } from "@/lib/auth";
 import { mockTasks, mockPhases, mockProjects, mockMilestones } from "@/lib/mockData";
 import { Task, Phase, Project, Milestone, Notification } from "@/types";
@@ -21,15 +23,17 @@ import { Task, Phase, Project, Milestone, Notification } from "@/types";
  * Habilita multi-proyectos, informes y aprobaciones administrativas.
  */
 
-type Tab = "gantt" | "board" | "calendar" | "reports" | "users" | "projects";
+type Tab = "gantt" | "board" | "calendar" | "reports" | "users" | "projects" | "notes" | "activity";
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
-  { id: "projects", label: "Proyectos",         icon: <Briefcase size={15} /> },
-  { id: "gantt",    label: "Diagrama de Gantt", icon: <LayoutDashboard size={15} /> },
-  { id: "board",    label: "Tablero",           icon: <Trello size={15} /> },
-  { id: "calendar", label: "Calendario",        icon: <Calendar size={15} /> },
-  { id: "reports",  label: "Informes",          icon: <BarChart2 size={15} /> },
-  { id: "users",    label: "Personas",          icon: <Users size={15} /> },
+  { id: "projects",  label: "Proyectos",         icon: <Briefcase size={15} /> },
+  { id: "gantt",     label: "Diagrama de Gantt", icon: <LayoutDashboard size={15} /> },
+  { id: "board",     label: "Tablero",           icon: <Trello size={15} /> },
+  { id: "calendar",  label: "Calendario",        icon: <Calendar size={15} /> },
+  { id: "reports",   label: "Informes",          icon: <BarChart2 size={15} /> },
+  { id: "notes",     label: "Notas",             icon: <StickyNote size={15} /> },
+  { id: "activity",  label: "Actividad",         icon: <Activity size={15} /> },
+  { id: "users",     label: "Personas",          icon: <Users size={15} /> },
 ];
 
 function getShortName(fullName: string): string {
@@ -1120,6 +1124,19 @@ export default function Home() {
             activeProjectId={activeProjectId}
             setActiveProjectId={setActiveProjectId}
             setActiveTab={setActiveTab}
+          />
+        )}
+        {activeTab === "notes" && (
+          <NotesView
+            users={users}
+            projects={projects}
+            activeProjectId={activeProjectId}
+          />
+        )}
+        {activeTab === "activity" && (
+          <ActivityView
+            users={users}
+            currentUser={user}
           />
         )}
       </main>

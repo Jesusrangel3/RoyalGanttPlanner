@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { executeQuery, sql } from '@/lib/db';
 import { User } from '@/types';
 import { getAuthenticatedUser } from '@/lib/session';
+import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
 
@@ -84,6 +86,71 @@ export async function PUT(request: Request) {
     return NextResponse.json({ success: true, user: body });
   } catch (error: any) {
     console.error('Error al actualizar usuario:', error);
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
+
+// POST: Crear un nuevo usuario (solo PM)
+export async function POST(request: Request) {
+  try {
+    const sessionUser = getAuthenticatedUser();
+    if (!sessionUser) {
+      return NextResponse.json({ success: false, error: 'No autorizado.' }, { status: 401 });
+    }
+    if (sessionUser.role !== 'Project Manager') {
+      return NextResponse.json({ success: false, error: 'Solo el Project Manager puede crear usuarios.' }, { status: 403 });
+    }
+
+    const body = await request.json();
+    const { name, email, role, contractType, availableHours, skills, color, initials, imageUrl } = body as Partial<User>;
+
+    if (!name?.trim() || !email?.trim()) {
+      return NextResponse.json({ success: false, error: 'Nombre y correo son obligatorios.' }, { status: 400 });
+    }
+
+    // Check email uniqueness
+    const exists = await executeQuery('SELECT COUNT(*) as c FROM Users WHERE email = @email', {
+      email: { type: sql.NVarChar, value: email.trim().toLowerCase() },
+    });
+    if (exists.recordset[0].c > 0) {
+      return NextResponse.json({ success: false, error: 'Ya existe un usuario con ese correo.' }, { status: 409 });
+    }
+
+    const id = 'u_' + Date.now();
+    const COLORS = ['#4f7cff','#7c5cfc','#3ecf8e','#f5a623','#ff5c5c','#38bdf8','#e879f9','#fb923c'];
+    const userColor = color || COLORS[Math.floor(Math.random() * COLORS.length)];
+    const userInitials = initials || name.trim().split(' ').map((w: string) => w[0]).join('').toUpperCase().slice(0, 2);
+
+    // Temp password: "Royal1234" — user must change on first login
+    const tempHash = crypto.createHash('sha256').update('Royal1234').digest('hex');
+    const passwordHash = await bcrypt.hash(tempHash, 10);
+
+    await executeQuery(`
+      INSERT INTO Users (id, name, email, initials, color, role, contractType, status, password, availableHours, skills, mustChangePassword, imageUrl)
+      VALUES (@id, @name, @email, @initials, @color, @role, @contractType, 'active', @password, @availableHours, @skills, 1, @imageUrl)
+    `, {
+      id: { type: sql.NVarChar, value: id },
+      name: { type: sql.NVarChar, value: name.trim() },
+      email: { type: sql.NVarChar, value: email.trim().toLowerCase() },
+      initials: { type: sql.NVarChar, value: userInitials },
+      color: { type: sql.NVarChar, value: userColor },
+      role: { type: sql.NVarChar, value: role || 'Frontend Developer' },
+      contractType: { type: sql.NVarChar, value: contractType || 'Por hora' },
+      password: { type: sql.NVarChar, value: passwordHash },
+      availableHours: { type: sql.Int, value: availableHours || 40 },
+      skills: { type: sql.NVarChar, value: JSON.stringify(skills || []) },
+      imageUrl: { type: sql.NVarChar, value: imageUrl || null },
+    });
+
+    const newUser: Partial<User> = {
+      id, name: name.trim(), email: email.trim().toLowerCase(),
+      initials: userInitials, color: userColor, role: role as any,
+      contractType: contractType as any, status: 'active',
+      availableHours: availableHours || 40, skills: skills || [],
+    };
+    return NextResponse.json({ success: true, user: newUser, tempPassword: 'Royal1234' });
+  } catch (error: any) {
+    console.error('Error al crear usuario:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 }

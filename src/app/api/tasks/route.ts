@@ -94,15 +94,16 @@ export async function POST(request: Request) {
     requestTask.input('createdBy', sql.NVarChar, sessionUser.id);
     requestTask.input('accepted', sql.Bit, task.accepted !== undefined ? (task.accepted ? 1 : 0) : 1);
     requestTask.input('boardOrder', sql.Int, task.boardOrder || 0);
+    requestTask.input('priority', sql.NVarChar, (task as any).priority || 'media');
 
     await requestTask.query(`
       INSERT INTO Tasks (
-        id, title, phaseId, projectId, milestoneId, startDate, endDate, status, progress, 
-        assigneeId, notes, estimatedHours, actualHours, requiredSkills, estimatedBudget, actualCost, materials, dependsOnTaskId, createdBy, accepted, boardOrder
+        id, title, phaseId, projectId, milestoneId, startDate, endDate, status, progress,
+        assigneeId, notes, estimatedHours, actualHours, requiredSkills, estimatedBudget, actualCost, materials, dependsOnTaskId, createdBy, accepted, boardOrder, priority
       )
       VALUES (
-        @id, @title, @phaseId, @projectId, @milestoneId, @startDate, @endDate, @status, @progress, 
-        @assigneeId, @notes, @estimatedHours, @actualHours, @requiredSkills, @estimatedBudget, @actualCost, @materials, @dependsOnTaskId, @createdBy, @accepted, @boardOrder
+        @id, @title, @phaseId, @projectId, @milestoneId, @startDate, @endDate, @status, @progress,
+        @assigneeId, @notes, @estimatedHours, @actualHours, @requiredSkills, @estimatedBudget, @actualCost, @materials, @dependsOnTaskId, @createdBy, @accepted, @boardOrder, @priority
       )
     `);
 
@@ -179,6 +180,7 @@ export async function PUT(request: Request) {
     requestTask.input('updatedAt', sql.DateTime2, new Date());
     requestTask.input('accepted', sql.Bit, task.accepted !== undefined ? (task.accepted ? 1 : 0) : 1);
     requestTask.input('boardOrder', sql.Int, task.boardOrder || 0);
+    requestTask.input('priority', sql.NVarChar, (task as any).priority || 'media');
 
     await requestTask.query(`
       UPDATE Tasks
@@ -186,7 +188,8 @@ export async function PUT(request: Request) {
           startDate = @startDate, endDate = @endDate, status = @status, progress = @progress,
           assigneeId = @assigneeId, notes = @notes, estimatedHours = @estimatedHours, actualHours = @actualHours,
           requiredSkills = @requiredSkills, estimatedBudget = @estimatedBudget, actualCost = @actualCost,
-          materials = @materials, dependsOnTaskId = @dependsOnTaskId, accepted = @accepted, boardOrder = @boardOrder, updatedAt = @updatedAt
+          materials = @materials, dependsOnTaskId = @dependsOnTaskId, accepted = @accepted,
+          boardOrder = @boardOrder, updatedAt = @updatedAt, priority = @priority
       WHERE id = @id
     `);
 

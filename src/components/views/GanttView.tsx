@@ -145,6 +145,33 @@ export default function GanttView({
   });
   const [filterStatus, setFilterStatus] = useState("");
   const [filterMember, setFilterMember] = useState("");
+  const [filterPriority, setFilterPriority] = useState("");
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  function getRiskFlag(task: Task): "vencida" | "en_riesgo" | null {
+    if (task.status === "done") return null;
+    const end = new Date(task.endDate + "T00:00:00");
+    if (end < today) return "vencida";
+    const daysLeft = (end.getTime() - today.getTime()) / (1000 * 3600 * 24);
+    if (daysLeft <= 2) return "en_riesgo";
+    return null;
+  }
+
+  const PRIORITY_COLORS: Record<string, string> = {
+    critica: "#ff5c5c",
+    alta:    "#f5a623",
+    media:   "#4f7cff",
+    baja:    "#8b93b8",
+  };
+
+  const PRIORITY_LABELS: Record<string, string> = {
+    critica: "C",
+    alta:    "A",
+    media:   "M",
+    baja:    "B",
+  };
   const [modalTask, setModalTask] = useState<Partial<Task> | null | false>(false);
   const [confirm, setConfirm] = useState<{ id: string; label: string } | null>(null);
 
@@ -227,7 +254,8 @@ export default function GanttView({
 
   const filteredTasks = tasks.filter((t) => {
     if (filterStatus && t.status !== filterStatus) return false;
-    if (filterMember && t.assigneeId !== filterMember) return false;
+    if (filterMember && !(t.assigneeIds?.includes(filterMember) || t.assigneeId === filterMember)) return false;
+    if (filterPriority && (t as any).priority !== filterPriority) return false;
     return true;
   });
 
@@ -377,6 +405,13 @@ export default function GanttView({
             <option value="blocked">Bloqueado</option>
             <option value="done">Terminado</option>
           </select>
+          <select className={INPUT + " !w-auto"} value={filterPriority} onChange={(e) => setFilterPriority(e.target.value)}>
+            <option value="">Todas las prioridades</option>
+            <option value="critica">🔴 Crítica</option>
+            <option value="alta">🟠 Alta</option>
+            <option value="media">🔵 Media</option>
+            <option value="baja">⚪ Baja</option>
+          </select>
           <span className="text-[11px] text-[#8b93b8] ml-2">Escala:</span>
           <select className={INPUT + " !w-auto"} value={viewMode} onChange={(e) => setViewMode(e.target.value as ViewMode)}>
             <option value="month">Mes</option>
@@ -426,11 +461,32 @@ export default function GanttView({
                     )}
                   </div>
                   {/* Fila de la Tarea */}
-                  {pTasks.map((task) => (
-                    <div key={task.id} className="flex items-center gap-2 px-2 border-b border-[#2e3352] hover:bg-white/[0.02] group" style={{ height: ROW_H }}>
+                  {pTasks.map((task) => {
+                    const risk = getRiskFlag(task);
+                    const priority = (task as any).priority || 'media';
+                    return (
+                    <div key={task.id} className={`flex items-center gap-2 px-2 border-b border-[#2e3352] hover:bg-white/[0.02] group ${risk === 'vencida' ? 'bg-red-500/5' : risk === 'en_riesgo' ? 'bg-yellow-500/5' : ''}`} style={{ height: ROW_H }}>
                       <div className="w-4 flex-shrink-0" />
+                      {/* Prioridad badge */}
+                      <div
+                        className="w-3.5 h-3.5 rounded-sm flex items-center justify-center text-white font-black flex-shrink-0"
+                        style={{ backgroundColor: PRIORITY_COLORS[priority], fontSize: 7 }}
+                        title={`Prioridad: ${priority}`}
+                      >
+                        {PRIORITY_LABELS[priority]}
+                      </div>
                       <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: STATUS_COLORS[task.status] }} />
                       <span className="flex-1 text-xs truncate cursor-pointer hover:text-[#4f7cff] transition-colors" onClick={() => setModalTask(task)}>{task.title}</span>
+                      {/* Risk indicator */}
+                      {risk && (
+                        <span
+                          className="text-[8px] font-bold px-1 rounded flex-shrink-0"
+                          style={{ backgroundColor: risk === 'vencida' ? '#ff5c5c22' : '#f5a62322', color: risk === 'vencida' ? '#ff5c5c' : '#f5a623' }}
+                          title={risk === 'vencida' ? 'Tarea vencida' : 'Tarea en riesgo (menos de 3 días)'}
+                        >
+                          {risk === 'vencida' ? 'VENCIDA' : 'RIESGO'}
+                        </span>
+                      )}
                       <div className="flex -space-x-1.5 overflow-hidden">
                         {(task.assigneeIds && task.assigneeIds.length > 0 ? task.assigneeIds : [task.assigneeId]).map((uid) => (
                           <Avatar key={uid} userId={uid} size={22} users={users} />
@@ -443,7 +499,8 @@ export default function GanttView({
                         </div>
                       )}
                     </div>
-                  ))}
+                  );
+                  })}
                 </div>
               );
             })}
@@ -633,6 +690,8 @@ export default function GanttView({
                     const barL = cs * colWidth;
                     const phaseColor = phase.color;
                     const prog = Math.min(100, Math.max(0, task.progress || 0));
+                    const taskRisk = getRiskFlag(task);
+                    const barBorder = taskRisk === 'vencida' ? '2px solid #ff5c5c' : taskRisk === 'en_riesgo' ? '2px solid #f5a623' : 'none';
 
                     return (
                       <div key={task.id} className="flex border-b border-[#2e3352] hover:bg-white/[0.015] relative" style={{ height: ROW_H, width: totalW }}
@@ -680,7 +739,7 @@ export default function GanttView({
                           <div
                             draggable={isPM && !resizing}
                             className={`absolute flex items-center px-2 text-[11px] font-medium text-white rounded select-none hover:brightness-110 shadow-sm group/bar ${isPM ? "cursor-grab" : "cursor-pointer"}`}
-                            style={{ left: barL, width: barW, height: 22, top: (ROW_H - 22) / 2, background: phaseColor, opacity: task.status === "done" ? 0.65 : 1 }}
+                            style={{ left: barL, width: barW, height: 22, top: (ROW_H - 22) / 2, background: phaseColor, opacity: task.status === "done" ? 0.65 : 1, border: barBorder, boxSizing: 'border-box' }}
                             onDragStart={(ev) => {
                               if (!isPM || resizing) {
                                 ev.preventDefault();

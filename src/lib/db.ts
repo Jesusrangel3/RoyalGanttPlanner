@@ -3,15 +3,21 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { mockUsers, mockProjects, mockPhases, mockMilestones, mockTasks } from './mockData';
 
+const serverRaw = process.env.DB_SERVER || 'localhost\\SQLEXPRESS';
+// Para instancias con nombre (localhost\SQLEXPRESS), tedious necesita server sin el nombre de instancia
+// y el instanceName separado. El puerto se resuelve automáticamente vía SQL Browser o se omite.
+const serverHost = serverRaw.includes('\\') ? serverRaw.split('\\')[0] : serverRaw;
+const instanceName = serverRaw.includes('\\') ? serverRaw.split('\\')[1] : undefined;
+
 const config: sql.config = {
-  user: process.env.DB_USER || 'sa',
+  user: process.env.DB_USER || 'royalapp',
   password: process.env.DB_PASSWORD,
-  server: process.env.DB_SERVER || 'localhost',
+  server: serverHost,
   database: process.env.DB_DATABASE || 'RoyalGanttPlanner',
-  port: parseInt(process.env.DB_PORT || '1433', 10),
   options: {
     encrypt: process.env.DB_ENCRYPT === 'true',
-    trustServerCertificate: true, // Para desarrollo local
+    trustServerCertificate: true,
+    instanceName: instanceName,
   },
   pool: {
     max: 10,

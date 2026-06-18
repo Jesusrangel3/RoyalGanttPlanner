@@ -96,67 +96,67 @@ export default function UsersView({
     };
   }
 
-  function addUser() {
+  const [addingUser, setAddingUser] = useState(false);
+  const [addUserError, setAddUserError] = useState("");
+
+  async function addUser() {
     if (!newUser.name.trim() || !newUser.email.trim()) return;
-    const initials = newUser.name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2);
-    const COLORS = ["#4f7cff","#7c5cfc","#3ecf8e","#f5a623","#ff5c5c","#38bdf8","#e879f9","#fb923c"];
-    const color = COLORS[users.length % COLORS.length];
-
-    const parsedSkills = newUser.skillsStr
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
-
-    const created: AuthUser = {
-      id: "u" + Date.now(),
-      name: newUser.name.trim(),
-      email: newUser.email.trim().toLowerCase(),
-      role: newUser.role as any,
-      contractType: newUser.contractType as any,
-      imageUrl: newUser.imageUrl || undefined,
-      initials,
-      color,
-      password: "Royal1234",
-      status: "active",
-      availableHours: Number(newUser.availableHours) || 40,
-      skills: parsedSkills,
-    };
-
-    setUsers((prev) => [...prev, created]);
-    setNewUser({
-      name: "",
-      email: "",
-      role: ROLE_OPTIONS[0],
-      contractType: CONTRACT_OPTIONS[0],
-      imageUrl: "",
-      availableHours: 40,
-      skillsStr: "",
-    });
-    setShowInvite(false);
+    setAddingUser(true);
+    setAddUserError("");
+    try {
+      const parsedSkills = newUser.skillsStr.split(",").map((s) => s.trim()).filter(Boolean);
+      const res = await fetch('/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newUser.name.trim(),
+          email: newUser.email.trim().toLowerCase(),
+          role: newUser.role,
+          contractType: newUser.contractType,
+          availableHours: Number(newUser.availableHours) || 40,
+          skills: parsedSkills,
+          imageUrl: newUser.imageUrl || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!data.success) { setAddUserError(data.error || 'Error al crear usuario'); return; }
+      setUsers((prev) => [...prev, data.user as AuthUser]);
+      alert(`Usuario creado. Contraseña temporal: Royal1234\nEl usuario deberá cambiarla en su primer inicio de sesión.`);
+      setNewUser({ name: "", email: "", role: ROLE_OPTIONS[0], contractType: CONTRACT_OPTIONS[0], imageUrl: "", availableHours: 40, skillsStr: "" });
+      setShowInvite(false);
+    } catch {
+      setAddUserError('Error de conexión');
+    } finally {
+      setAddingUser(false);
+    }
   }
 
-  function updateUser(u: AuthUser) {
-    const parsedSkills = editSkillsStr
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean);
+  async function updateUser(u: AuthUser) {
+    const parsedSkills = editSkillsStr.split(",").map((s) => s.trim()).filter(Boolean);
+    const updated = { ...u, skills: parsedSkills };
 
-    const updated = {
-      ...u,
-      skills: parsedSkills,
-    };
+    // Persist to DB
+    try {
+      await fetch('/api/users', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updated),
+      });
+    } catch { /* fallback: at least update local */ }
 
     setUsers((prev) => prev.map((x) => (x.id === u.id ? updated : x)));
-
     if (currentUser && u.id === currentUser.id) {
       saveSessionUser(updated);
       setCurrentUser(updated);
     }
-
     setEditUser(null);
   }
 
-  function removeUser(id: string) {
+  async function removeUser(id: string) {
+    if (!confirm("¿Eliminar este usuario del sistema?")) return;
+    try {
+      await fetch(`/api/users?id=${id}`, { method: 'DELETE' });
+    } catch { /* fallback */ }
     setUsers((prev) => prev.filter((u) => u.id !== id));
     setEditUser(null);
   }
@@ -406,9 +406,14 @@ export default function UsersView({
                 <input className={INP} value={newUser.skillsStr} onChange={(e) => setNewUser((p) => ({ ...p, skillsStr: e.target.value }))} placeholder="React, Node.js, QA" />
               </Field>
             </div>
+            {addUserError && (
+              <p className="text-xs text-red-400 mt-2 text-right">{addUserError}</p>
+            )}
             <div className="flex gap-2 justify-end mt-4">
-              <button className={BTN} onClick={() => setShowInvite(false)}>Cancelar</button>
-              <button className={BTN_P} onClick={addUser}>Agregar</button>
+              <button className={BTN} onClick={() => { setShowInvite(false); setAddUserError(""); }}>Cancelar</button>
+              <button className={BTN_P} onClick={addUser} disabled={addingUser}>
+                {addingUser ? "Guardando..." : "Agregar"}
+              </button>
             </div>
           </div>
         </div>

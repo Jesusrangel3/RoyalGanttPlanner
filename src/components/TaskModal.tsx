@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { AlertTriangle, MessageSquare, ListTodo, Send, Package, DollarSign, Calendar } from "lucide-react";
-import { Task, TaskStatus, Milestone, Phase, AuthUser } from "@/types";
+import { useState, useEffect } from "react";
+import { AlertTriangle, MessageSquare, ListTodo, Send, Package, DollarSign, Calendar, Clock, Plus, Trash2, Flag } from "lucide-react";
+import { Task, TaskStatus, TaskPriority, Milestone, Phase, AuthUser, TimeEntry } from "@/types";
 import { getSessionUser } from "@/lib/auth";
 
 interface TaskModalProps {
@@ -42,7 +42,12 @@ export default function TaskModal({
   const currentUser = getSessionUser();
   const isPM = currentUser?.role === "Project Manager";
 
-  const [activeTab, setActiveTab] = useState<"details" | "comments">("details");
+  const [activeTab, setActiveTab] = useState<"details" | "comments" | "time">("details");
+  const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
+  const [newHours, setNewHours] = useState("");
+  const [newHoursDesc, setNewHoursDesc] = useState("");
+  const [newHoursDate, setNewHoursDate] = useState(new Date().toISOString().split("T")[0]);
+  const [loadingTime, setLoadingTime] = useState(false);
   const [showAssigneeDropdown, setShowAssigneeDropdown] = useState(false);
 
 
@@ -56,6 +61,7 @@ export default function TaskModal({
       assigneeIds: users[0]?.id ? [users[0].id] : [],
       status: "open" as TaskStatus,
       progress: 0,
+      priority: "media" as TaskPriority,
       notes: "",
       estimatedHours: 0,
       actualHours: 0,
@@ -94,6 +100,15 @@ export default function TaskModal({
   const [materialsStr, setMaterialsStr] = useState(() => (task?.materials || []).join(", "));
   const [commentText, setCommentText] = useState("");
   const isEdit = !!task?.id;
+
+  useEffect(() => {
+    if (isEdit && task?.id) {
+      fetch(`/api/time-entries?taskId=${task.id}`)
+        .then(r => r.json())
+        .then(d => { if (d.success) setTimeEntries(d.entries); })
+        .catch(() => {});
+    }
+  }, [isEdit, task?.id]);
 
 
   function set(k: keyof Task, v: unknown) {
@@ -134,6 +149,34 @@ export default function TaskModal({
       requiredSkills: finalSkills,
       materials: finalMaterials,
     } as Task);
+  }
+
+  async function handleAddTimeEntry() {
+    if (!newHours || isNaN(Number(newHours)) || Number(newHours) <= 0 || !task?.id) return;
+    setLoadingTime(true);
+    try {
+      const res = await fetch('/api/time-entries', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskId: task.id, hours: Number(newHours), description: newHoursDesc, date: newHoursDate }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        const refetch = await fetch(`/api/time-entries?taskId=${task.id}`);
+        const refData = await refetch.json();
+        if (refData.success) setTimeEntries(refData.entries);
+        setNewHours("");
+        setNewHoursDesc("");
+        setNewHoursDate(new Date().toISOString().split("T")[0]);
+      }
+    } finally {
+      setLoadingTime(false);
+    }
+  }
+
+  async function handleDeleteTimeEntry(id: string) {
+    await fetch(`/api/time-entries?id=${id}`, { method: 'DELETE' });
+    setTimeEntries(prev => prev.filter(e => e.id !== id));
   }
 
   function handleAddComment() {
@@ -243,6 +286,19 @@ export default function TaskModal({
               </span>
             )}
           </button>
+          {isEdit && (
+            <button
+              onClick={() => setActiveTab("time")}
+              className={`flex items-center gap-1.5 px-4 py-2 border-b-2 transition relative ${activeTab === "time" ? "border-[#3ecf8e] text-[#e8eaf6] bg-[#1a1d27]" : "border-transparent hover:text-[#e8eaf6]"}`}
+            >
+              <Clock size={14} /> Horas
+              {timeEntries.length > 0 && (
+                <span className="ml-1 bg-[#3ecf8e] text-white text-[9px] px-1.5 rounded-full">
+                  {timeEntries.reduce((s, e) => s + e.hours, 0).toFixed(1)}h
+                </span>
+              )}
+            </button>
+          )}
         </div>
 
         {/* Modal body scroll area */}
@@ -353,9 +409,9 @@ export default function TaskModal({
                 </Field>
 
                 <Field label="Estado" className="flex-1">
-                  <select 
-                    className={INPUT} 
-                    value={form.status || "open"} 
+                  <select
+                    className={INPUT}
+                    value={form.status || "open"}
                     disabled={!canEditProgress}
                     onChange={(e) => {
                       const nextStatus = e.target.value as TaskStatus;
@@ -375,6 +431,25 @@ export default function TaskModal({
                     <option value="blocked">Bloqueado</option>
                     <option value="done">Terminado</option>
                   </select>
+                </Field>
+
+                <Field label="Prioridad" className="w-28 flex-shrink-0">
+                  <div className="relative">
+                    <Flag size={10} className="absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" style={{
+                      color: (form as any).priority === 'critica' ? '#ff5c5c' : (form as any).priority === 'alta' ? '#f5a623' : (form as any).priority === 'media' ? '#4f7cff' : '#8b93b8'
+                    }} />
+                    <select
+                      className={INPUT + " pl-6"}
+                      value={(form as any).priority || "media"}
+                      onChange={(e) => setForm(prev => ({ ...prev, priority: e.target.value as TaskPriority }))}
+                      disabled={!isPM}
+                    >
+                      <option value="critica">Crítica</option>
+                      <option value="alta">Alta</option>
+                      <option value="media">Media</option>
+                      <option value="baja">Baja</option>
+                    </select>
+                  </div>
                 </Field>
 
                 <Field label="Progreso %" className="w-20 flex-shrink-0">
@@ -478,6 +553,88 @@ export default function TaskModal({
                   ))}
                 </div>
               )}
+            </div>
+          ) : activeTab === "time" ? (
+            // PESTAÑA REGISTRO DE HORAS
+            <div className="space-y-4 flex flex-col">
+              <div className="bg-[#22263a] border border-[#2e3352] rounded-lg p-3 space-y-2">
+                <span className="text-[10px] font-bold text-[#8b93b8] uppercase tracking-wider">Registrar horas trabajadas</span>
+                <div className="flex gap-2">
+                  <div className="flex flex-col gap-1 w-20 flex-shrink-0">
+                    <label className="text-[9px] text-[#8b93b8] uppercase">Horas</label>
+                    <input type="number" step="0.5" min="0.5" className={INPUT} value={newHours} onChange={e => setNewHours(e.target.value)} placeholder="2.5" />
+                  </div>
+                  <div className="flex flex-col gap-1 flex-shrink-0">
+                    <label className="text-[9px] text-[#8b93b8] uppercase">Fecha</label>
+                    <input type="date" className={INPUT} value={newHoursDate} onChange={e => setNewHoursDate(e.target.value)} />
+                  </div>
+                  <div className="flex flex-col gap-1 flex-1">
+                    <label className="text-[9px] text-[#8b93b8] uppercase">Descripción</label>
+                    <input className={INPUT} value={newHoursDesc} onChange={e => setNewHoursDesc(e.target.value)} placeholder="¿Qué hiciste?" />
+                  </div>
+                  <div className="flex flex-col justify-end">
+                    <button onClick={handleAddTimeEntry} disabled={loadingTime || !newHours} className="p-1.5 bg-[#3ecf8e] hover:bg-[#2db87a] text-white rounded-lg transition disabled:opacity-50">
+                      <Plus size={14} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Resumen */}
+              <div className="flex items-center gap-4 text-xs">
+                <div className="flex flex-col">
+                  <span className="text-[9px] text-[#8b93b8] uppercase">Estimadas</span>
+                  <span className="font-bold text-[#e8eaf6]">{form.estimatedHours || 0}h</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[9px] text-[#8b93b8] uppercase">Registradas</span>
+                  <span className="font-bold text-[#3ecf8e]">{timeEntries.reduce((s, e) => s + e.hours, 0).toFixed(1)}h</span>
+                </div>
+                {form.estimatedHours && timeEntries.length > 0 && (
+                  <div className="flex-1">
+                    <div className="h-1.5 bg-[#2e3352] rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all"
+                        style={{
+                          width: `${Math.min(100, (timeEntries.reduce((s, e) => s + e.hours, 0) / (form.estimatedHours || 1)) * 100)}%`,
+                          backgroundColor: timeEntries.reduce((s, e) => s + e.hours, 0) > (form.estimatedHours || 0) ? '#ff5c5c' : '#3ecf8e'
+                        }}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Lista de registros */}
+              <div className="space-y-1 max-h-[220px] overflow-y-auto">
+                {timeEntries.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-8 text-[#8b93b8]">
+                    <Clock size={28} className="opacity-20 mb-2" />
+                    <p className="text-xs">Sin registros de horas todavía</p>
+                  </div>
+                ) : (
+                  timeEntries.map(entry => (
+                    <div key={entry.id} className="flex items-center gap-2 bg-[#22263a] border border-[#2e3352]/50 rounded-lg px-3 py-2 group">
+                      <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[8px] font-bold flex-shrink-0" style={{ backgroundColor: entry.userColor || '#4f7cff' }}>
+                        {entry.userName?.slice(0, 2).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-[#3ecf8e]">{entry.hours}h</span>
+                          <span className="text-[10px] text-[#8b93b8]">{entry.date}</span>
+                          <span className="text-[10px] text-[#e8eaf6] truncate">{entry.description}</span>
+                        </div>
+                        <span className="text-[9px] text-[#8b93b8]">{entry.userName}</span>
+                      </div>
+                      {(currentUser?.id === entry.userId || isPM) && (
+                        <button onClick={() => handleDeleteTimeEntry(entry.id)} className="opacity-0 group-hover:opacity-100 p-1 hover:text-[#ff5c5c] transition text-[#8b93b8]">
+                          <Trash2 size={11} />
+                        </button>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           ) : (
             // PESTAÑA COMENTARIOS / COLABORACIÓN
