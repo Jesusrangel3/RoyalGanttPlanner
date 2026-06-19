@@ -1,0 +1,61 @@
+version: '3.9'
+
+# ============================================================
+#  Royal Gantt Planner — Docker Compose
+#
+#  USO:
+#    1. Copiar .env.example a .env.production y llenar valores
+#    2. docker compose --env-file .env.production up -d
+#    3. Acceder en http://localhost:3000
+# ============================================================
+
+services:
+
+  # ---- Next.js Application ----
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: royal-gantt-app
+    ports:
+      - "3000:3000"
+    environment:
+      NODE_ENV: production
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_SERVER: ${DB_SERVER}
+      DB_DATABASE: ${DB_DATABASE}
+      DB_ENCRYPT: ${DB_ENCRYPT:-true}
+      JWT_SECRET: ${JWT_SECRET}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+      SMTP_ENABLED: ${SMTP_ENABLED:-false}
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USER: ${SMTP_USER:-}
+      SMTP_PASS: ${SMTP_PASS:-}
+      SMTP_FROM: ${SMTP_FROM:-}
+    depends_on:
+      - websocket
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ---- WebSocket Server ----
+  websocket:
+    build:
+      context: .
+      dockerfile: Dockerfile.socket
+    container_name: royal-gantt-socket
+    ports:
+      - "3001:3001"
+    environment:
+      SOCKET_PORT: 3001
+      SOCKET_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:3000}
+    restart: unless-stopped
+
+networks:
+  default:
+    name: royal-gantt-network

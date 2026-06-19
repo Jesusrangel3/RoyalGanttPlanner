@@ -1,0 +1,16 @@
+# ============================================================
+#  Royal Gantt Planner — Dockerfile (Servidor WebSocket)
+# ============================================================
+
+FROM node:20-alpine
+WORKDIR /app
+
+COPY package.json package-lock.json* ./
+RUN npm ci --omit=dev
+
+COPY socket-server.js ./
+
+EXPOSE 3001
+ENV SOCKET_PORT=3001
+
+CMD ["node", "socket-server.js"]
