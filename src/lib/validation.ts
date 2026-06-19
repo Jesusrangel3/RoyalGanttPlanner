@@ -186,7 +186,7 @@ export function calculateUserWorkload(userId: string, Tasks_Gantt: Task[]): {
   totalActualHours: number;
   incompleteTasks: number;
 } {
-  const userTasks = tasks.filter((t) => t.assigneeId === userId && t.status !== "done");
+  const userTasks = Tasks_Gantt.filter((t) => t.assigneeId === userId && t.status !== "done");
   
   return {
     totalEstimatedHours: userTasks.reduce((sum, t) => sum + (t.estimatedHours || 0), 0),

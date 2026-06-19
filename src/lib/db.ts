@@ -508,7 +508,7 @@ async function handleMockQuery<T = any>(
     }));
 
     // Asegurarse de incluir a René Rangel
-    if (!users_Gantt.some(u => u.id === "u_rene")) {
+    if (!users.some(u => u.id === "u_rene")) {
       users.push({
         id: "u_rene",
         name: "René de Jesús Rangel Buitrón",
@@ -526,7 +526,7 @@ async function handleMockQuery<T = any>(
     }
 
     // Asegurarse de incluir a Jesús Sánchez
-    if (!users_Gantt.some(u => u.id === "u_jesus")) {
+    if (!users.some(u => u.id === "u_jesus")) {
       users.push({
         id: "u_jesus",
         name: "Jesús Sánchez",
@@ -544,8 +544,8 @@ async function handleMockQuery<T = any>(
     }
 
     return {
-      recordset: users_Gantt as any,
-      recordsets: [users_Gantt] as any,
+      recordset: users as any,
+      recordsets: [users] as any,
       rowsAffected: [users.length],
       output: {}
     };

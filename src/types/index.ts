@@ -65,7 +65,7 @@ export interface Task {
   riskFlag?: "en_riesgo" | "vencida" | null;
   assigneeId: string;
   assigneeIds?: string[];
-  Notes_Gantt?: string;
+  notes?: string;
   estimatedHours?: number;
   actualHours?: number;
   requiredSkills?: string[];

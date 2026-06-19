@@ -48,7 +48,7 @@ export const mockTasks: Task[] = [
   { id: "t8",  projectId: "proj1", phaseId: "p3", title: "Módulo autenticación",      startDate: "2026-06-10", endDate: "2026-06-30", status: "open",        progress: 0,   assigneeId: "u7" },
   { id: "t9",  projectId: "proj1", phaseId: "p3", title: "API REST",                  startDate: "2026-06-15", endDate: "2026-07-15", status: "open",        progress: 0,   assigneeId: "u3" },
   { id: "t10", projectId: "proj1", phaseId: "p3", title: "Frontend",                  startDate: "2026-06-20", endDate: "2026-07-30", status: "open",        progress: 0,   assigneeId: "u4" },
-  { id: "t11", projectId: "proj1", phaseId: "p3", title: "Integraciones externas",    startDate: "2026-07-01", endDate: "2026-07-20", status: "blocked",     progress: 0,   assigneeId: "u1", Notes_Gantt: "Esperando credenciales del cliente" },
+  { id: "t11", projectId: "proj1", phaseId: "p3", title: "Integraciones externas",    startDate: "2026-07-01", endDate: "2026-07-20", status: "blocked",     progress: 0,   assigneeId: "u1", notes: "Esperando credenciales del cliente" },
   { id: "t12", projectId: "proj1", phaseId: "p4", title: "QA y pruebas",              startDate: "2026-07-20", endDate: "2026-08-10", status: "open",        progress: 0,   assigneeId: "u2" },
   { id: "t13", projectId: "proj1", phaseId: "p4", title: "Deploy y go-live",          startDate: "2026-08-10", endDate: "2026-08-15", status: "open",        progress: 0,   assigneeId: "u3" },
 ];

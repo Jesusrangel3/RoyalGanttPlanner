@@ -62,7 +62,7 @@ export default function TaskModal({
       status: "open" as TaskStatus,
       progress: 0,
       priority: "media" as TaskPriority,
-      Notes_Gantt: "",
+      notes: "",
       estimatedHours: 0,
       actualHours: 0,
       requiredSkills: [],
@@ -521,7 +521,7 @@ export default function TaskModal({
               </div>
 
               <Field label="Notas">
-                <textarea className={INPUT + " resize-none"} rows={2} value={form.notes || ""} onChange={(e) => set("Notes_Gantt", e.target.value)} placeholder="Notas de la tarea..." disabled={!isPM} />
+                <textarea className={INPUT + " resize-none"} rows={2} value={form.notes || ""} onChange={(e) => set("notes", e.target.value)} placeholder="Notas de la tarea..." disabled={!isPM} />
               </Field>
 
               {/* Alertas de Dependencias */}

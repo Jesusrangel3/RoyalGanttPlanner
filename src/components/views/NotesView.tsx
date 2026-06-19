@@ -233,7 +233,7 @@ export default function Notes_GanttView({ users_Gantt, Projects_Gantt, activePro
   const loadNotes_Gantt = useCallback(async () => {
     try {
       setLoading(true);
-      const url = activeProjectId ? `/api/Notes_Gantt?projectId=${activeProjectId}` : '/api/notes';
+      const url = activeProjectId ? `/api/notes?projectId=${activeProjectId}` : '/api/notes';
       const res = await fetch(url);
       const data = await res.json();
       if (data.success) setNotes_Gantt(data.notes);
@@ -267,7 +267,7 @@ export default function Notes_GanttView({ users_Gantt, Projects_Gantt, activePro
 
   async function handleDelete(id: string) {
     if (!confirm("¿Eliminar esta nota?")) return;
-    await fetch(`/api/Notes_Gantt?id=${id}`, { method: 'DELETE' });
+    await fetch(`/api/notes?id=${id}`, { method: 'DELETE' });
     setNotes_Gantt((prev) => prev.filter((n) => n.id !== id));
   }
 
