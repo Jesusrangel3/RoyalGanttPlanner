@@ -115,11 +115,12 @@ export async function POST(request: Request) {
       role: dbUser.role
     });
     
+    // SameSite=None + Secure requerido para funcionar en iframe cross-origin (hub.royal-transports.com)
     cookies().set('session', token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      maxAge: 60 * 60 * 24 * 7, // 7 días
+      secure: true,
+      sameSite: 'none',
+      maxAge: 60 * 60 * 24 * 7,
       path: '/'
     });
 
