@@ -8,7 +8,19 @@ const ALLOWED_ORIGINS = (process.env.SOCKET_ALLOWED_ORIGINS || "http://localhost
 const server = http.createServer();
 const io = new Server(server, {
   cors: {
-    origin: ALLOWED_ORIGINS,
+    origin: (origin, callback) => {
+      // Permitir sin origen (Postman, mismo servidor)
+      if (!origin) return callback(null, true);
+      // Permitir localhost y cualquier IP de red local (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
+      if (
+        ALLOWED_ORIGINS.includes(origin) ||
+        /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin) ||
+        /^http:\/\/(192\.168\.|10\.|172\.(1[6-9]|2\d|3[01])\.)/.test(origin)
+      ) {
+        return callback(null, true);
+      }
+      callback(new Error("CORS no permitido: " + origin));
+    },
     methods: ["GET", "POST"],
     credentials: true,
   },
