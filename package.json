@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "socket": "node socket-server.js",
+    "start:all": "start \"Royal-WebSockets\" node socket-server.js && next start"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",

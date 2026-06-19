@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -21,9 +21,9 @@ function getCalendarGrid(year: number, month: number): (Date | null)[] {
   return grid;
 }
 
-function getTasksForDay(tasks: Task[], date: Date): Task[] {
+function getTasksForDay(Tasks_Gantt: Task[], date: Date): Task[] {
   const d = date.toISOString().split("T")[0];
-  return tasks.filter((t) => {
+  return Tasks_Gantt.filter((t) => {
     const s = t.startDate;
     const e = t.endDate;
     return s <= d && d <= e;
@@ -31,20 +31,20 @@ function getTasksForDay(tasks: Task[], date: Date): Task[] {
 }
 
 interface CalendarViewProps {
-  tasks: Task[];
-  setTasks: (tasks: Task[] | ((prev: Task[]) => Task[])) => void;
-  phases: Phase[];
-  milestones: Milestone[];
-  users: AuthUser[];
+  Tasks_Gantt: Task[];
+  setTasks: (Tasks_Gantt: Task[] | ((prev: Task[]) => Task[])) => void;
+  Phases_Gantt: Phase[];
+  Milestones_Gantt: Milestone[];
+  users_Gantt: AuthUser[];
   activeProjectId: string;
 }
 
 export default function CalendarView({
-  tasks,
+  Tasks_Gantt,
   setTasks,
-  phases,
-  milestones,
-  users,
+  Phases_Gantt,
+  Milestones_Gantt,
+  users_Gantt,
   activeProjectId,
 }: CalendarViewProps) {
   const today = new Date();
@@ -204,7 +204,7 @@ export default function CalendarView({
         <div className="grid grid-cols-7 h-full" style={{ gridAutoRows: "minmax(100px, 1fr)" }}>
           {grid.map((day, i) => {
             const isCurrentDay = day && day.toDateString() === today.toDateString();
-            const dayTasks = day ? getTasksForDay(tasks, day) : [];
+            const dayTasks = day ? getTasksForDay(Tasks_Gantt, day) : [];
             const dayStr = day ? `${year}-${String(month + 1).padStart(2, "0")}-${String(day.getDate()).padStart(2, "0")}` : "";
 
             return (
@@ -235,7 +235,7 @@ export default function CalendarView({
                     </div>
                     <div className="flex flex-col gap-0.5 mt-1 overflow-hidden flex-1 justify-start">
                       {dayTasks.map((task) => {
-                        const phase = phases.find((p) => p.id === task.phaseId);
+                        const phase = Phases_Gantt.find((p) => p.id === task.phaseId);
                         const isAssignee = currentUser && (task.assigneeIds?.includes(currentUser.id) || task.assigneeId === currentUser.id);
                         const canDrag = !!isPM;
 
@@ -276,10 +276,10 @@ export default function CalendarView({
       {modalTask !== false && (
         <TaskModal
           task={modalTask}
-          users={users}
-          milestones={milestones}
-          tasks={tasks}
-          phases={phases}
+          users_Gantt={users_Gantt}
+          Milestones_Gantt={Milestones_Gantt}
+          Tasks_Gantt={Tasks_Gantt}
+          Phases_Gantt={Phases_Gantt}
           onClose={() => setModalTask(false)}
           onSave={handleSaveTask}
           onDelete={handleDeleteTask}

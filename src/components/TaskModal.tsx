@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { AlertTriangle, MessageSquare, ListTodo, Send, Package, DollarSign, Calendar, Clock, Plus, Trash2, Flag } from "lucide-react";
@@ -10,10 +10,10 @@ interface TaskModalProps {
   onClose: () => void;
   onSave: (t: Task) => void;
   onDelete?: (id: string) => void;
-  users: AuthUser[];
-  milestones: Milestone[];
-  tasks: Task[];
-  phases: Phase[];
+  users_Gantt: AuthUser[];
+  Milestones_Gantt: Milestone[];
+  Tasks_Gantt: Task[];
+  Phases_Gantt: Phase[];
 }
 
 export function Field({ label, children, className = "" }: { label: string; children: React.ReactNode; className?: string }) {
@@ -34,16 +34,16 @@ export default function TaskModal({
   onClose,
   onSave,
   onDelete,
-  users,
-  milestones,
-  tasks,
-  phases,
+  users_Gantt,
+  Milestones_Gantt,
+  Tasks_Gantt,
+  Phases_Gantt,
 }: TaskModalProps) {
   const currentUser = getSessionUser();
   const isPM = currentUser?.role === "Project Manager";
 
   const [activeTab, setActiveTab] = useState<"details" | "comments" | "time">("details");
-  const [timeEntries, setTimeEntries] = useState<TimeEntry[]>([]);
+  const [TimeEntries_Gantt, setTimeEntries_Gantt] = useState<TimeEntry[]>([]);
   const [newHours, setNewHours] = useState("");
   const [newHoursDesc, setNewHoursDesc] = useState("");
   const [newHoursDate, setNewHoursDate] = useState(new Date().toISOString().split("T")[0]);
@@ -54,15 +54,15 @@ export default function TaskModal({
   const [form, setForm] = useState<Partial<Task>>(() => {
     const base = {
       title: "",
-      phaseId: phases[0]?.id || "",
+      phaseId: Phases_Gantt[0]?.id || "",
       startDate: new Date().toISOString().split("T")[0],
       endDate: new Date().toISOString().split("T")[0],
-      assigneeId: users[0]?.id || "",
-      assigneeIds: users[0]?.id ? [users[0].id] : [],
+      assigneeId: users_Gantt[0]?.id || "",
+      assigneeIds: users_Gantt[0]?.id ? [users_Gantt[0].id] : [],
       status: "open" as TaskStatus,
       progress: 0,
       priority: "media" as TaskPriority,
-      notes: "",
+      Notes_Gantt: "",
       estimatedHours: 0,
       actualHours: 0,
       requiredSkills: [],
@@ -105,7 +105,7 @@ export default function TaskModal({
     if (isEdit && task?.id) {
       fetch(`/api/time-entries?taskId=${task.id}`)
         .then(r => r.json())
-        .then(d => { if (d.success) setTimeEntries(d.entries); })
+        .then(d => { if (d.success) setTimeEntries_Gantt(d.entries); })
         .catch(() => {});
     }
   }, [isEdit, task?.id]);
@@ -164,7 +164,7 @@ export default function TaskModal({
       if (data.success) {
         const refetch = await fetch(`/api/time-entries?taskId=${task.id}`);
         const refData = await refetch.json();
-        if (refData.success) setTimeEntries(refData.entries);
+        if (refData.success) setTimeEntries_Gantt(refData.entries);
         setNewHours("");
         setNewHoursDesc("");
         setNewHoursDate(new Date().toISOString().split("T")[0]);
@@ -176,7 +176,7 @@ export default function TaskModal({
 
   async function handleDeleteTimeEntry(id: string) {
     await fetch(`/api/time-entries?id=${id}`, { method: 'DELETE' });
-    setTimeEntries(prev => prev.filter(e => e.id !== id));
+    setTimeEntries_Gantt(prev => prev.filter(e => e.id !== id));
   }
 
   function handleAddComment() {
@@ -197,7 +197,7 @@ export default function TaskModal({
   }
 
   // ── Lógica de Rescheduling de Dependencias ──
-  const parentTask = form.dependsOnTaskId ? tasks.find((t) => t.id === form.dependsOnTaskId) : null;
+  const parentTask = form.dependsOnTaskId ? Tasks_Gantt.find((t) => t.id === form.dependsOnTaskId) : null;
   const isDependencyViolated = parentTask && form.startDate && form.startDate < parentTask.endDate;
 
   function handleAutoAdjustDates() {
@@ -229,11 +229,11 @@ export default function TaskModal({
   const assignedUserIds = form.assigneeIds || (form.assigneeId ? [form.assigneeId] : []);
 
   assignedUserIds.forEach((uid) => {
-    const assignedUser = users.find((u) => u.id === uid);
+    const assignedUser = users_Gantt.find((u) => u.id === uid);
     if (!assignedUser) return;
 
     // 1. Disponibilidad de horas
-    const activeUserTasks = tasks.filter(
+    const activeUserTasks = Tasks_Gantt.filter(
       (t) => (t.assigneeIds?.includes(assignedUser.id) || t.assigneeId === assignedUser.id) && t.status !== "done" && t.id !== form.id
     );
     const totalAssignedHours = activeUserTasks.reduce((sum, t) => sum + (t.estimatedHours || 0), 0);
@@ -292,9 +292,9 @@ export default function TaskModal({
               className={`flex items-center gap-1.5 px-4 py-2 border-b-2 transition relative ${activeTab === "time" ? "border-[#3ecf8e] text-[#e8eaf6] bg-[#1a1d27]" : "border-transparent hover:text-[#e8eaf6]"}`}
             >
               <Clock size={14} /> Horas
-              {timeEntries.length > 0 && (
+              {TimeEntries_Gantt.length > 0 && (
                 <span className="ml-1 bg-[#3ecf8e] text-white text-[9px] px-1.5 rounded-full">
-                  {timeEntries.reduce((s, e) => s + e.hours, 0).toFixed(1)}h
+                  {TimeEntries_Gantt.reduce((s, e) => s + e.hours, 0).toFixed(1)}h
                 </span>
               )}
             </button>
@@ -314,7 +314,7 @@ export default function TaskModal({
               <div className="flex gap-3">
                 <Field label="Fase" className="flex-1">
                   <select className={INPUT} value={form.phaseId || ""} onChange={(e) => set("phaseId", e.target.value)} disabled={!isPM}>
-                    {phases
+                    {Phases_Gantt
                       .filter((p) => !p.projectId || p.projectId === form.projectId)
                       .map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                   </select>
@@ -322,7 +322,7 @@ export default function TaskModal({
                 <Field label="Meta / Objetivo" className="flex-1">
                   <select className={INPUT} value={form.milestoneId || ""} onChange={(e) => set("milestoneId", e.target.value)} disabled={!isPM}>
                     <option value="">Ninguna meta</option>
-                    {milestones.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+                    {Milestones_Gantt.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
                   </select>
                 </Field>
               </div>
@@ -346,7 +346,7 @@ export default function TaskModal({
                   >
                     <span className="truncate flex items-center gap-1.5">
                       {(() => {
-                        const currentAssignees = users.filter(u => (form.assigneeIds || (form.assigneeId ? [form.assigneeId] : [])).includes(u.id));
+                        const currentAssignees = users_Gantt.filter(u => (form.assigneeIds || (form.assigneeId ? [form.assigneeId] : [])).includes(u.id));
                         if (currentAssignees.length > 0) {
                           return (
                             <span className="flex items-center gap-1.5">
@@ -376,7 +376,7 @@ export default function TaskModal({
                     <>
                       <div className="fixed inset-0 z-10" onClick={() => setShowAssigneeDropdown(false)} />
                       <div className="absolute top-full left-0 right-0 mt-1 bg-[#1e2235] border border-[#2e3352] rounded-lg shadow-xl max-h-48 overflow-y-auto z-20 p-1.5 space-y-1">
-                        {users.map((u) => {
+                        {users_Gantt.map((u) => {
                           const isChecked = (form.assigneeIds || (form.assigneeId ? [form.assigneeId] : [])).includes(u.id);
                           return (
                             <label
@@ -513,7 +513,7 @@ export default function TaskModal({
                 <Field label="Tarea Predecesora (Dependencia)">
                   <select className={INPUT} value={form.dependsOnTaskId || ""} onChange={(e) => set("dependsOnTaskId", e.target.value)} disabled={!isPM}>
                     <option value="">Ninguna</option>
-                    {tasks.filter(t => t.id !== form.id).map(t => (
+                    {Tasks_Gantt.filter(t => t.id !== form.id).map(t => (
                       <option key={t.id} value={t.id}>{t.title}</option>
                     ))}
                   </select>
@@ -521,7 +521,7 @@ export default function TaskModal({
               </div>
 
               <Field label="Notas">
-                <textarea className={INPUT + " resize-none"} rows={2} value={form.notes || ""} onChange={(e) => set("notes", e.target.value)} placeholder="Notas de la tarea..." disabled={!isPM} />
+                <textarea className={INPUT + " resize-none"} rows={2} value={form.notes || ""} onChange={(e) => set("Notes_Gantt", e.target.value)} placeholder="Notas de la tarea..." disabled={!isPM} />
               </Field>
 
               {/* Alertas de Dependencias */}
@@ -588,16 +588,16 @@ export default function TaskModal({
                 </div>
                 <div className="flex flex-col">
                   <span className="text-[9px] text-[#8b93b8] uppercase">Registradas</span>
-                  <span className="font-bold text-[#3ecf8e]">{timeEntries.reduce((s, e) => s + e.hours, 0).toFixed(1)}h</span>
+                  <span className="font-bold text-[#3ecf8e]">{TimeEntries_Gantt.reduce((s, e) => s + e.hours, 0).toFixed(1)}h</span>
                 </div>
-                {form.estimatedHours && timeEntries.length > 0 && (
+                {form.estimatedHours && TimeEntries_Gantt.length > 0 && (
                   <div className="flex-1">
                     <div className="h-1.5 bg-[#2e3352] rounded-full overflow-hidden">
                       <div
                         className="h-full rounded-full transition-all"
                         style={{
-                          width: `${Math.min(100, (timeEntries.reduce((s, e) => s + e.hours, 0) / (form.estimatedHours || 1)) * 100)}%`,
-                          backgroundColor: timeEntries.reduce((s, e) => s + e.hours, 0) > (form.estimatedHours || 0) ? '#ff5c5c' : '#3ecf8e'
+                          width: `${Math.min(100, (TimeEntries_Gantt.reduce((s, e) => s + e.hours, 0) / (form.estimatedHours || 1)) * 100)}%`,
+                          backgroundColor: TimeEntries_Gantt.reduce((s, e) => s + e.hours, 0) > (form.estimatedHours || 0) ? '#ff5c5c' : '#3ecf8e'
                         }}
                       />
                     </div>
@@ -607,13 +607,13 @@ export default function TaskModal({
 
               {/* Lista de registros */}
               <div className="space-y-1 max-h-[220px] overflow-y-auto">
-                {timeEntries.length === 0 ? (
+                {TimeEntries_Gantt.length === 0 ? (
                   <div className="flex flex-col items-center justify-center py-8 text-[#8b93b8]">
                     <Clock size={28} className="opacity-20 mb-2" />
                     <p className="text-xs">Sin registros de horas todavía</p>
                   </div>
                 ) : (
-                  timeEntries.map(entry => (
+                  TimeEntries_Gantt.map(entry => (
                     <div key={entry.id} className="flex items-center gap-2 bg-[#22263a] border border-[#2e3352]/50 rounded-lg px-3 py-2 group">
                       <div className="w-6 h-6 rounded-full flex items-center justify-center text-white text-[8px] font-bold flex-shrink-0" style={{ backgroundColor: entry.userColor || '#4f7cff' }}>
                         {entry.userName?.slice(0, 2).toUpperCase()}
@@ -649,7 +649,7 @@ export default function TaskModal({
                   </div>
                 ) : (
                   form.comments.map((comm) => {
-                    const commenter = users.find((u) => u.id === comm.userId);
+                    const commenter = users_Gantt.find((u) => u.id === comm.userId);
                     return (
                       <div key={comm.id} className="flex items-start gap-2.5">
                         {commenter?.imageUrl ? (

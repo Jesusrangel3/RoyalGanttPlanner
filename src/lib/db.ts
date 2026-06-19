@@ -1,4 +1,4 @@
-import sql from 'mssql';
+﻿import sql from 'mssql';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import { mockUsers, mockProjects, mockPhases, mockMilestones, mockTasks } from './mockData';
@@ -35,7 +35,7 @@ function sha256(str: string): string {
 export async function seedDatabase(pool: sql.ConnectionPool) {
   try {
     // Verificar si la tabla de usuarios ya tiene datos
-    const userCheck = await pool.request().query('SELECT COUNT(*) as count FROM Users');
+    const userCheck = await pool.request().query('SELECT COUNT(*) as count FROM users_Gantt');
     if (userCheck.recordset[0].count > 0) {
       return; // Ya está sembrada
     }
@@ -65,7 +65,7 @@ export async function seedDatabase(pool: sql.ConnectionPool) {
         .input('password', sql.NVarChar, serverHash)
         .input('skills', sql.NVarChar, JSON.stringify([]))
         .query(`
-          INSERT INTO Users (id, name, email, initials, color, role, contractType, status, password, skills)
+          INSERT INTO users_Gantt (id, name, email, initials, color, role, contractType, status, password, skills)
           VALUES (@id, @name, @email, @initials, @color, @role, @contractType, @status, @password, @skills)
         `);
     }
@@ -74,7 +74,7 @@ export async function seedDatabase(pool: sql.ConnectionPool) {
     const reneEmail = 'renerangel@royaltransports.com.mx';
     const reneCheck = await pool.request()
       .input('email', sql.NVarChar, reneEmail)
-      .query('SELECT COUNT(*) as count FROM Users WHERE email = @email');
+      .query('SELECT COUNT(*) as count FROM users_Gantt WHERE email = @email');
 
     if (reneCheck.recordset[0].count === 0) {
       const reneHash = await bcrypt.hash(sha256('Royal1234'), 10);
@@ -91,7 +91,7 @@ export async function seedDatabase(pool: sql.ConnectionPool) {
         .input('skills', sql.NVarChar, JSON.stringify(['React', 'TypeScript', 'SQL']))
         .input('mustChangePassword', sql.Bit, 0)
         .query(`
-          INSERT INTO Users (id, name, email, initials, color, role, contractType, status, password, skills, mustChangePassword)
+          INSERT INTO users_Gantt (id, name, email, initials, color, role, contractType, status, password, skills, mustChangePassword)
           VALUES (@id, @name, @email, @initials, @color, @role, @contractType, @status, @password, @skills, @mustChangePassword)
         `);
     }
@@ -107,7 +107,7 @@ export async function seedDatabase(pool: sql.ConnectionPool) {
         .input('status', sql.NVarChar, proj.status)
         .input('leaderId', sql.NVarChar, proj.leaderId)
         .query(`
-          INSERT INTO Projects (id, name, description, startDate, endDate, status, leaderId)
+          INSERT INTO Projects_Gantt (id, name, description, startDate, endDate, status, leaderId)
           VALUES (@id, @name, @description, @startDate, @endDate, @status, @leaderId)
         `);
     }
@@ -120,12 +120,12 @@ export async function seedDatabase(pool: sql.ConnectionPool) {
         .input('color', sql.NVarChar, phase.color)
         .input('projectId', sql.NVarChar, 'proj1')
         .query(`
-          INSERT INTO Phases (id, name, color, projectId)
+          INSERT INTO Phases_Gantt (id, name, color, projectId)
           VALUES (@id, @name, @color, @projectId)
         `);
     }
 
-    // 4. Insertar Hitos/Milestones
+    // 4. Insertar Hitos/Milestones_Gantt
     for (const ms of mockMilestones) {
       await pool.request()
         .input('id', sql.NVarChar, ms.id)
@@ -135,7 +135,7 @@ export async function seedDatabase(pool: sql.ConnectionPool) {
         .input('description', sql.NVarChar, ms.description || null)
         .input('status', sql.NVarChar, ms.status)
         .query(`
-          INSERT INTO Milestones (id, projectId, name, targetDate, description, status)
+          INSERT INTO Milestones_Gantt (id, projectId, name, targetDate, description, status)
           VALUES (@id, @projectId, @name, @targetDate, @description, @status)
         `);
     }
@@ -162,7 +162,7 @@ export async function seedDatabase(pool: sql.ConnectionPool) {
         .input('materials', sql.NVarChar, JSON.stringify([]))
         .input('dependsOnTaskId', sql.NVarChar, task.dependsOnTaskId || null)
         .query(`
-          INSERT INTO Tasks (
+          INSERT INTO Tasks_Gantt (
             id, title, phaseId, projectId, milestoneId, startDate, endDate, status, progress, 
             assigneeId, notes, estimatedHours, actualHours, requiredSkills, estimatedBudget, actualCost, materials, dependsOnTaskId
           )
@@ -172,12 +172,12 @@ export async function seedDatabase(pool: sql.ConnectionPool) {
           )
         `);
 
-      // Guardar asignación en tabla puente TaskAssignees
+      // Guardar asignación en tabla puente TaskAssignees_Gantt
       await pool.request()
         .input('taskId', sql.NVarChar, task.id)
         .input('userId', sql.NVarChar, task.assigneeId)
         .query(`
-          INSERT INTO TaskAssignees (taskId, userId)
+          INSERT INTO TaskAssignees_Gantt (taskId, userId)
           VALUES (@taskId, @userId)
         `);
     }
@@ -189,80 +189,180 @@ export async function seedDatabase(pool: sql.ConnectionPool) {
 }
 
 async function runMigrations(pool: sql.ConnectionPool) {
+  // Cada paso es independiente; un fallo no aborta los demás
+  const step = async (name: string, query: string) => {
+    try {
+      await pool.request().query(query);
+    } catch (err: any) {
+      console.warn(`[migration] '${name}': ${err.message}`);
+    }
+  };
+
+  // ── Columnas faltantes en users_Gantt ────────────────────────────────────────────
+  await step('users_Gantt.name',             `IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('users_Gantt') AND name='name') ALTER TABLE users_Gantt ADD name NVARCHAR(255) NOT NULL DEFAULT '';`);
+  await step('users_Gantt.initials',         `IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('users_Gantt') AND name='initials') ALTER TABLE users_Gantt ADD initials NVARCHAR(10) NOT NULL DEFAULT '';`);
+  await step('users_Gantt.color',            `IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('users_Gantt') AND name='color') ALTER TABLE users_Gantt ADD color NVARCHAR(20) NOT NULL DEFAULT '#6b7280';`);
+  await step('users_Gantt.role',             `IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('users_Gantt') AND name='role') ALTER TABLE users_Gantt ADD role NVARCHAR(100) NOT NULL DEFAULT 'Developer';`);
+  await step('users_Gantt.contractType',     `IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('users_Gantt') AND name='contractType') ALTER TABLE users_Gantt ADD contractType NVARCHAR(50) NOT NULL DEFAULT 'Fijo';`);
+  await step('users_Gantt.status',           `IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('users_Gantt') AND name='status') ALTER TABLE users_Gantt ADD status NVARCHAR(20) NOT NULL DEFAULT 'active';`);
+  await step('users_Gantt.password',         `IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('users_Gantt') AND name='password') ALTER TABLE users_Gantt ADD password NVARCHAR(255) NOT NULL DEFAULT '';`);
+  await step('users_Gantt.imageUrl',         `IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('users_Gantt') AND name='imageUrl') ALTER TABLE users_Gantt ADD imageUrl NVARCHAR(500) NULL;`);
+  await step('users_Gantt.availableHours',   `IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('users_Gantt') AND name='availableHours') ALTER TABLE users_Gantt ADD availableHours INT NOT NULL DEFAULT 40;`);
+  await step('users_Gantt.totalAssignedHours', `IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('users_Gantt') AND name='totalAssignedHours') ALTER TABLE users_Gantt ADD totalAssignedHours INT NOT NULL DEFAULT 0;`);
+  await step('users_Gantt.skills',           `IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('users_Gantt') AND name='skills') ALTER TABLE users_Gantt ADD skills NVARCHAR(MAX) NOT NULL DEFAULT '[]';`);
+  await step('users_Gantt.mustChangePassword',`IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('users_Gantt') AND name='mustChangePassword') ALTER TABLE users_Gantt ADD mustChangePassword BIT NOT NULL DEFAULT 1;`);
+  await step('users_Gantt.loginAttempts',    `IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('users_Gantt') AND name='loginAttempts') ALTER TABLE users_Gantt ADD loginAttempts INT NOT NULL DEFAULT 0;`);
+  await step('users_Gantt.lockoutUntil',     `IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('users_Gantt') AND name='lockoutUntil') ALTER TABLE users_Gantt ADD lockoutUntil DATETIME2 NULL;`);
+  await step('users_Gantt.createdAt',        `IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('users_Gantt') AND name='createdAt') ALTER TABLE users_Gantt ADD createdAt DATETIME2 NOT NULL DEFAULT GETDATE();`);
+
+  // ── Tablas faltantes ───────────────────────────────────────────────────────
+  await step('create.Projects_Gantt', `
+    IF NOT EXISTS (SELECT 1 FROM sys.objects WHERE object_id=OBJECT_ID(N'Projects_Gantt') AND type='U')
+    CREATE TABLE Projects_Gantt (
+      id NVARCHAR(50) NOT NULL PRIMARY KEY, name NVARCHAR(255) NOT NULL,
+      description NVARCHAR(MAX) NULL, startDate VARCHAR(10) NOT NULL,
+      endDate VARCHAR(10) NOT NULL, status NVARCHAR(50) NOT NULL DEFAULT 'planning',
+      leaderId NVARCHAR(50) NULL, createdAt DATETIME2 NOT NULL DEFAULT GETDATE()
+    );`);
+
+  await step('create.Phases_Gantt', `
+    IF NOT EXISTS (SELECT 1 FROM sys.objects WHERE object_id=OBJECT_ID(N'Phases_Gantt') AND type='U')
+    CREATE TABLE Phases_Gantt (
+      id NVARCHAR(50) NOT NULL PRIMARY KEY, name NVARCHAR(255) NOT NULL,
+      color NVARCHAR(20) NOT NULL DEFAULT '#6b7280', projectId NVARCHAR(50) NOT NULL
+    );`);
+
+  await step('create.Milestones_Gantt', `
+    IF NOT EXISTS (SELECT 1 FROM sys.objects WHERE object_id=OBJECT_ID(N'Milestones_Gantt') AND type='U')
+    CREATE TABLE Milestones_Gantt (
+      id NVARCHAR(50) NOT NULL PRIMARY KEY, projectId NVARCHAR(50) NOT NULL,
+      name NVARCHAR(255) NOT NULL, targetDate VARCHAR(10) NOT NULL,
+      description NVARCHAR(MAX) NULL, status NVARCHAR(50) NOT NULL DEFAULT 'pending',
+      createdAt DATETIME2 NOT NULL DEFAULT GETDATE()
+    );`);
+
+  await step('create.Tasks_Gantt', `
+    IF NOT EXISTS (SELECT 1 FROM sys.objects WHERE object_id=OBJECT_ID(N'Tasks_Gantt') AND type='U')
+    CREATE TABLE Tasks_Gantt (
+      id NVARCHAR(50) NOT NULL PRIMARY KEY, title NVARCHAR(500) NOT NULL,
+      phaseId NVARCHAR(50) NOT NULL, projectId NVARCHAR(50) NOT NULL,
+      milestoneId NVARCHAR(50) NULL, startDate VARCHAR(10) NOT NULL,
+      endDate VARCHAR(10) NOT NULL, status NVARCHAR(50) NOT NULL DEFAULT 'open',
+      progress INT NOT NULL DEFAULT 0, assigneeId NVARCHAR(50) NOT NULL,
+      notes NVARCHAR(MAX) NULL, estimatedHours INT NULL, actualHours INT NOT NULL DEFAULT 0,
+      requiredSkills NVARCHAR(MAX) NOT NULL DEFAULT '[]',
+      estimatedBudget DECIMAL(18,2) NULL, actualCost DECIMAL(18,2) NULL,
+      materials NVARCHAR(MAX) NOT NULL DEFAULT '[]', dependsOnTaskId NVARCHAR(50) NULL,
+      createdBy NVARCHAR(50) NULL, accepted BIT NOT NULL DEFAULT 1,
+      boardOrder INT NOT NULL DEFAULT 0, priority NVARCHAR(20) NOT NULL DEFAULT 'media',
+      createdAt DATETIME2 NOT NULL DEFAULT GETDATE(), updatedAt DATETIME2 NULL
+    );`);
+
+  await step('create.TaskAssignees_Gantt', `
+    IF NOT EXISTS (SELECT 1 FROM sys.objects WHERE object_id=OBJECT_ID(N'TaskAssignees_Gantt') AND type='U')
+    CREATE TABLE TaskAssignees_Gantt (
+      taskId NVARCHAR(50) NOT NULL, userId NVARCHAR(50) NOT NULL,
+      CONSTRAINT PK_TaskAssignees_Gantt PRIMARY KEY (taskId, userId)
+    );`);
+
+  await step('create.TaskComments_Gantt', `
+    IF NOT EXISTS (SELECT 1 FROM sys.objects WHERE object_id=OBJECT_ID(N'TaskComments_Gantt') AND type='U')
+    CREATE TABLE TaskComments_Gantt (
+      id NVARCHAR(50) NOT NULL PRIMARY KEY, taskId NVARCHAR(50) NOT NULL,
+      userId NVARCHAR(50) NOT NULL, content NVARCHAR(MAX) NOT NULL,
+      createdAt DATETIME2 NOT NULL DEFAULT GETDATE()
+    );`);
+
+  await step('create.Notifications_Gantt', `
+    IF NOT EXISTS (SELECT 1 FROM sys.objects WHERE object_id=OBJECT_ID(N'Notifications_Gantt') AND type='U')
+    CREATE TABLE Notifications_Gantt (
+      id NVARCHAR(50) NOT NULL PRIMARY KEY, userId NVARCHAR(50) NOT NULL,
+      title NVARCHAR(255) NOT NULL, message NVARCHAR(MAX) NOT NULL,
+      type NVARCHAR(50) NOT NULL, taskId NVARCHAR(50) NULL,
+      [read] BIT NOT NULL DEFAULT 0, createdAt DATETIME2 NOT NULL DEFAULT GETDATE()
+    );`);
+
+  await step('create.notes', `
+    IF NOT EXISTS (SELECT 1 FROM sys.objects WHERE object_id=OBJECT_ID(N'Notes_Gantt') AND type='U')
+    CREATE TABLE Notes_Gantt (
+      id NVARCHAR(50) NOT NULL PRIMARY KEY, userId NVARCHAR(50) NOT NULL,
+      projectId NVARCHAR(50) NULL, taskId NVARCHAR(50) NULL,
+      title NVARCHAR(255) NOT NULL, content NVARCHAR(MAX) NOT NULL DEFAULT '',
+      color NVARCHAR(20) NOT NULL DEFAULT '#fef3c7', pinned BIT NOT NULL DEFAULT 0,
+      tags NVARCHAR(500) NOT NULL DEFAULT '', isShared BIT NOT NULL DEFAULT 0,
+      createdAt DATETIME2 NOT NULL DEFAULT GETDATE(), updatedAt DATETIME2 NOT NULL DEFAULT GETDATE()
+    );`);
+
+  await step('create.ActivityLog_Gantt', `
+    IF NOT EXISTS (SELECT 1 FROM sys.objects WHERE object_id=OBJECT_ID(N'ActivityLog_Gantt') AND type='U')
+    CREATE TABLE ActivityLog_Gantt (
+      id NVARCHAR(50) NOT NULL PRIMARY KEY, userId NVARCHAR(50) NOT NULL,
+      userName NVARCHAR(255) NOT NULL, action NVARCHAR(100) NOT NULL,
+      entityType NVARCHAR(50) NOT NULL, entityId NVARCHAR(50) NOT NULL,
+      entityTitle NVARCHAR(255) NOT NULL, details NVARCHAR(MAX) NULL,
+      createdAt DATETIME2 NOT NULL DEFAULT GETDATE()
+    );`);
+
+  await step('create.TimeEntries_Gantt', `
+    IF NOT EXISTS (SELECT 1 FROM sys.objects WHERE object_id=OBJECT_ID(N'TimeEntries_Gantt') AND type='U')
+    CREATE TABLE TimeEntries_Gantt (
+      id NVARCHAR(50) NOT NULL PRIMARY KEY, taskId NVARCHAR(50) NOT NULL,
+      userId NVARCHAR(50) NOT NULL, hours DECIMAL(5,2) NOT NULL,
+      description NVARCHAR(MAX) NULL, date VARCHAR(10) NOT NULL,
+      createdAt DATETIME2 NOT NULL DEFAULT GETDATE()
+    );`);
+
+  // ── Columnas faltantes en Tasks_Gantt (si la tabla ya existía sin ellas) ─────────
+  // Renombrar Notes_Gantt → notes si quedó con el nombre incorrecto
+  await step('Tasks_Gantt.rename.notes', `
+    IF EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('Tasks_Gantt') AND name='Notes_Gantt')
+      EXEC sp_rename 'Tasks_Gantt.Notes_Gantt', 'notes', 'COLUMN';
+  `);
+  await step('Tasks_Gantt.notes',      `IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('Tasks_Gantt') AND name='notes') ALTER TABLE Tasks_Gantt ADD notes NVARCHAR(MAX) NULL;`);
+  await step('Tasks_Gantt.accepted',   `IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('Tasks_Gantt') AND name='accepted') ALTER TABLE Tasks_Gantt ADD accepted BIT NOT NULL DEFAULT 1;`);
+  await step('Tasks_Gantt.boardOrder', `IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('Tasks_Gantt') AND name='boardOrder') ALTER TABLE Tasks_Gantt ADD boardOrder INT NOT NULL DEFAULT 0;`);
+  await step('Tasks_Gantt.priority',   `IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('Tasks_Gantt') AND name='priority') ALTER TABLE Tasks_Gantt ADD priority NVARCHAR(20) NOT NULL DEFAULT 'media';`);
+
+  // ── Fase 'Bloqueadas' para proj1 ──────────────────────────────────────────
+  await step('seed.phase.bloqueadas', `
+    IF EXISTS (SELECT 1 FROM sys.objects WHERE object_id=OBJECT_ID(N'Phases_Gantt') AND type='U')
+    AND EXISTS (SELECT 1 FROM sys.objects WHERE object_id=OBJECT_ID(N'Projects_Gantt') AND type='U')
+    AND NOT EXISTS (SELECT 1 FROM Phases_Gantt WHERE id='p5')
+    AND EXISTS (SELECT 1 FROM Projects_Gantt WHERE id='proj1')
+    INSERT INTO Phases_Gantt (id,name,color,projectId) VALUES ('p5','Bloqueadas','#ff5c5c','proj1');`);
+
+  // ── Garantizar usuario admin (aunque el seed no haya corrido) ────────────
   try {
-    // 1. Agregar columna mustChangePassword si no existe
-    await pool.request().query(`
-      IF NOT EXISTS (
-          SELECT * FROM sys.columns 
-          WHERE object_id = OBJECT_ID('Users') AND name = 'mustChangePassword'
-      )
-      BEGIN
-          ALTER TABLE Users ADD mustChangePassword BIT NOT NULL DEFAULT 1;
-      END
-    `);
-    
-    // 2. Agregar columna loginAttempts si no existe
-    await pool.request().query(`
-      IF NOT EXISTS (
-          SELECT * FROM sys.columns 
-          WHERE object_id = OBJECT_ID('Users') AND name = 'loginAttempts'
-      )
-      BEGIN
-          ALTER TABLE Users ADD loginAttempts INT NOT NULL DEFAULT 0;
-      END
-    `);
-
-    // 3. Agregar columna lockoutUntil si no existe
-    await pool.request().query(`
-      IF NOT EXISTS (
-          SELECT * FROM sys.columns 
-          WHERE object_id = OBJECT_ID('Users') AND name = 'lockoutUntil'
-      )
-      BEGIN
-          ALTER TABLE Users ADD lockoutUntil DATETIME2 NULL;
-      END
-    `);
-
-    // 4. Asegurarse de que René tenga mustChangePassword = 0
-    await pool.request()
-      .input('email', sql.NVarChar, 'renerangel@royaltransport.com.mx')
-      .query('UPDATE Users SET mustChangePassword = 0 WHERE email = @email');
-
-    // 5. Agregar columna accepted a la tabla Tasks si no existe
-    await pool.request().query(`
-      IF NOT EXISTS (
-          SELECT * FROM sys.columns 
-          WHERE object_id = OBJECT_ID('Tasks') AND name = 'accepted'
-      )
-      BEGIN
-          ALTER TABLE Tasks ADD accepted BIT NOT NULL DEFAULT 1;
-      END
-    `);
-
-    // 6. Asegurar fase Bloqueadas para proj1
-    await pool.request().query(`
-      IF NOT EXISTS (SELECT * FROM Phases WHERE id = 'p5')
-      BEGIN
-          INSERT INTO Phases (id, name, color, projectId)
-          VALUES ('p5', 'Bloqueadas', '#ff5c5c', 'proj1');
-      END
-    `);
-
-    // 7. Agregar columna boardOrder a la tabla Tasks si no existe
-    await pool.request().query(`
-      IF NOT EXISTS (
-          SELECT * FROM sys.columns 
-          WHERE object_id = OBJECT_ID('Tasks') AND name = 'boardOrder'
-      )
-      BEGIN
-          ALTER TABLE Tasks ADD boardOrder INT NOT NULL DEFAULT 0;
-      END
-    `);
-      
-    console.log('Migraciones de base de datos ejecutadas con éxito.');
-  } catch (error) {
-    console.error('Error al ejecutar migraciones en la base de datos:', error);
+    const check = await pool.request()
+      .input('email', sql.NVarChar, 'renerangel@royaltransports.com.mx')
+      .query('SELECT COUNT(*) AS cnt FROM users_Gantt WHERE email=@email');
+    if (check.recordset[0].cnt === 0) {
+      const adminHash = await bcrypt.hash(sha256('Royal1234'), 10);
+      await pool.request()
+        .input('name',              sql.NVarChar, 'René de Jesús Rangel Buitrón')
+        .input('email',             sql.NVarChar, 'renerangel@royaltransports.com.mx')
+        .input('initials',          sql.NVarChar, 'RR')
+        .input('color',             sql.NVarChar, '#7c5cfc')
+        .input('role',              sql.NVarChar, 'Project Manager')
+        .input('contractType',      sql.NVarChar, 'Fijo')
+        .input('status',            sql.NVarChar, 'active')
+        .input('password',          sql.NVarChar, adminHash)
+        .input('skills',            sql.NVarChar, JSON.stringify(['React','TypeScript','SQL']))
+        .input('mustChangePassword', sql.Bit,     0)
+        // NEWID() para id UNIQUEIDENTIFIER; password_hash = password para compatibilidad con RoyalCIF
+        .query(`INSERT INTO users_Gantt (id,name,email,initials,color,role,contractType,status,password,password_hash,skills,mustChangePassword)
+                VALUES (NEWID(),@name,@email,@initials,@color,@role,@contractType,@status,@password,@password,@skills,@mustChangePassword)`);
+      console.log('[migration] Usuario admin creado en RoyalCIF.');
+    } else {
+      await pool.request()
+        .input('email', sql.NVarChar, 'renerangel@royaltransports.com.mx')
+        .query('UPDATE users_Gantt SET mustChangePassword=0 WHERE email=@email');
+    }
+  } catch (err: any) {
+    console.warn(`[migration] seed.admin: ${err.message}`);
   }
+
+  console.log('[migration] Migraciones completadas.');
 }
 
 let isMockMode = false;
@@ -317,8 +417,8 @@ async function handleMockQuery<T = any>(
 ): Promise<sql.IResult<T>> {
   const normalizedQuery = query.replace(/\s+/g, ' ').trim().toUpperCase();
 
-  // 1. SELECT ... FROM Users WHERE email = @email
-  if (normalizedQuery.includes("USERS") && normalizedQuery.includes("WHERE EMAIL =")) {
+  // 1. SELECT ... FROM users_Gantt WHERE email = @email
+  if (normalizedQuery.includes("users_Gantt") && normalizedQuery.includes("WHERE EMAIL =")) {
     const emailParam = params?.email || "";
     const emailVal = typeof emailParam === "string" ? emailParam.trim().toLowerCase() : "";
 
@@ -396,8 +496,8 @@ async function handleMockQuery<T = any>(
     };
   }
 
-  // 2. SELECT ... FROM Users
-  if (normalizedQuery.includes("USERS")) {
+  // 2. SELECT ... FROM users_Gantt
+  if (normalizedQuery.includes("users_Gantt")) {
     const defaultHash = await bcrypt.hash(sha256('Royal1234'), 10);
     const users = mockUsers.map(u => ({
       ...u,
@@ -408,7 +508,7 @@ async function handleMockQuery<T = any>(
     }));
 
     // Asegurarse de incluir a René Rangel
-    if (!users.some(u => u.id === "u_rene")) {
+    if (!users_Gantt.some(u => u.id === "u_rene")) {
       users.push({
         id: "u_rene",
         name: "René de Jesús Rangel Buitrón",
@@ -426,7 +526,7 @@ async function handleMockQuery<T = any>(
     }
 
     // Asegurarse de incluir a Jesús Sánchez
-    if (!users.some(u => u.id === "u_jesus")) {
+    if (!users_Gantt.some(u => u.id === "u_jesus")) {
       users.push({
         id: "u_jesus",
         name: "Jesús Sánchez",
@@ -444,15 +544,15 @@ async function handleMockQuery<T = any>(
     }
 
     return {
-      recordset: users as any,
-      recordsets: [users] as any,
+      recordset: users_Gantt as any,
+      recordsets: [users_Gantt] as any,
       rowsAffected: [users.length],
       output: {}
     };
   }
 
-  // 3. SELECT ... FROM Projects
-  if (normalizedQuery.includes("PROJECTS")) {
+  // 3. SELECT ... FROM Projects_Gantt
+  if (normalizedQuery.includes("Projects_Gantt")) {
     return {
       recordset: mockProjects as any,
       recordsets: [mockProjects] as any,
@@ -461,8 +561,8 @@ async function handleMockQuery<T = any>(
     };
   }
 
-  // 4. SELECT ... FROM Phases
-  if (normalizedQuery.includes("PHASES")) {
+  // 4. SELECT ... FROM Phases_Gantt
+  if (normalizedQuery.includes("Phases_Gantt")) {
     return {
       recordset: mockPhases as any,
       recordsets: [mockPhases] as any,
@@ -471,8 +571,8 @@ async function handleMockQuery<T = any>(
     };
   }
 
-  // 5. SELECT ... FROM Milestones
-  if (normalizedQuery.includes("MILESTONES")) {
+  // 5. SELECT ... FROM Milestones_Gantt
+  if (normalizedQuery.includes("Milestones_Gantt")) {
     return {
       recordset: mockMilestones as any,
       recordsets: [mockMilestones] as any,
@@ -481,8 +581,8 @@ async function handleMockQuery<T = any>(
     };
   }
 
-  // 6. SELECT ... FROM TaskAssignees
-  if (normalizedQuery.includes("TASKASSIGNEES")) {
+  // 6. SELECT ... FROM TaskAssignees_Gantt
+  if (normalizedQuery.includes("TaskAssignees_Gantt")) {
     const list = mockTasks.map(t => ({ taskId: t.id, userId: t.assigneeId }));
     return {
       recordset: list as any,
@@ -492,8 +592,8 @@ async function handleMockQuery<T = any>(
     };
   }
 
-  // 7. SELECT ... FROM TaskComments
-  if (normalizedQuery.includes("TASKCOMMENTS")) {
+  // 7. SELECT ... FROM TaskComments_Gantt
+  if (normalizedQuery.includes("TaskComments_Gantt")) {
     return {
       recordset: [] as any,
       recordsets: [[]] as any,
@@ -502,8 +602,8 @@ async function handleMockQuery<T = any>(
     };
   }
 
-  // 8. SELECT ... FROM Tasks
-  if (normalizedQuery.includes("TASKS")) {
+  // 8. SELECT ... FROM Tasks_Gantt
+  if (normalizedQuery.includes("Tasks_Gantt")) {
     return {
       recordset: mockTasks as any,
       recordsets: [mockTasks] as any,
@@ -512,8 +612,8 @@ async function handleMockQuery<T = any>(
     };
   }
 
-  // 9. SELECT ... FROM Notifications
-  if (normalizedQuery.includes("NOTIFICATIONS")) {
+  // 9. SELECT ... FROM Notifications_Gantt
+  if (normalizedQuery.includes("Notifications_Gantt")) {
     return {
       recordset: [] as any,
       recordsets: [[]] as any,

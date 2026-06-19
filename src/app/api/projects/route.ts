@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import { executeQuery, sql, getDbPool } from '@/lib/db';
 import { Project } from '@/types';
 import { getAuthenticatedUser } from '@/lib/session';
@@ -13,8 +13,8 @@ export async function GET() {
       return NextResponse.json({ success: false, error: 'No autorizado. Por favor inicie sesión.' }, { status: 401 });
     }
 
-    const result = await executeQuery('SELECT id, name, description, startDate, endDate, status, leaderId FROM Projects');
-    return NextResponse.json({ success: true, projects: result.recordset });
+    const result = await executeQuery('SELECT id, name, description, startDate, endDate, status, leaderId FROM Projects_Gantt');
+    return NextResponse.json({ success: true, Projects_Gantt: result.recordset });
   } catch (error: any) {
     console.error('Error al obtener proyectos:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
@@ -60,12 +60,12 @@ export async function POST(request: Request) {
     requestProj.input('leaderId', sql.NVarChar, leaderId);
 
     await requestProj.query(`
-      INSERT INTO Projects (id, name, description, startDate, endDate, status, leaderId)
+      INSERT INTO Projects_Gantt (id, name, description, startDate, endDate, status, leaderId)
       VALUES (@id, @name, @description, @startDate, @endDate, @status, @leaderId)
     `);
 
     // 4. Crear por defecto fases iniciales para este proyecto de forma atómica
-    const defaultPhases = [
+    const defaultPhases_Gantt = [
       { id: `${id}_init`, name: 'Inicio y planificación', color: '#4f7cff' },
       { id: `${id}_design`, name: 'Diseño y arquitectura', color: '#7c5cfc' },
       { id: `${id}_dev`, name: 'Desarrollo', color: '#3ecf8e' },
@@ -73,7 +73,7 @@ export async function POST(request: Request) {
       { id: `${id}_blocked`, name: 'Bloqueadas', color: '#ff5c5c' }
     ];
 
-    for (const phase of defaultPhases) {
+    for (const phase of defaultPhases_Gantt) {
       const requestPhase = new sql.Request(transaction);
       requestPhase.input('id', sql.NVarChar, phase.id);
       requestPhase.input('name', sql.NVarChar, phase.name);
@@ -81,13 +81,13 @@ export async function POST(request: Request) {
       requestPhase.input('projectId', sql.NVarChar, id);
 
       await requestPhase.query(`
-        INSERT INTO Phases (id, name, color, projectId)
+        INSERT INTO Phases_Gantt (id, name, color, projectId)
         VALUES (@id, @name, @color, @projectId)
       `);
     }
 
     await transaction.commit();
-    return NextResponse.json({ success: true, project: body, defaultPhases });
+    return NextResponse.json({ success: true, project: body, defaultPhases_Gantt });
   } catch (error: any) {
     console.error('Error al crear proyecto:', error);
     try { await transaction.rollback(); } catch {}
@@ -119,7 +119,7 @@ export async function PUT(request: Request) {
     }
 
     await executeQuery(`
-      UPDATE Projects
+      UPDATE Projects_Gantt
       SET name = @name, description = @description, startDate = @startDate, endDate = @endDate, status = @status, leaderId = @leaderId
       WHERE id = @id
     `, {
@@ -158,7 +158,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ success: false, error: 'Se requiere el parámetro ID para eliminar.' }, { status: 400 });
     }
 
-    await executeQuery('DELETE FROM Projects WHERE id = @id', {
+    await executeQuery('DELETE FROM Projects_Gantt WHERE id = @id', {
       id: { type: sql.NVarChar, value: id }
     });
 

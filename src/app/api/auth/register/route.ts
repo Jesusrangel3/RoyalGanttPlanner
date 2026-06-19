@@ -1,10 +1,22 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import { executeQuery, sql } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { getAuthenticatedUser } from '@/lib/session';
+import { checkRateLimit } from '@/lib/rateLimit';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] ?? '127.0.0.1';
+    const { ok, retryAfter } = checkRateLimit(`register:${ip}`, 5);
+    if (!ok) {
+      logger.warn('Rate limit excedido en registro', { ip });
+      return NextResponse.json(
+        { success: false, error: 'Demasiados intentos de registro. Intente de nuevo en un minuto.' },
+        { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+      );
+    }
+
     const body = await request.json();
     const { id, name, email, password, role, contractType, imageUrl } = body;
 
@@ -16,7 +28,7 @@ export async function POST(request: Request) {
 
     // Validar si el correo institucional ya existe
     const existingCheck = await executeQuery(
-      'SELECT COUNT(*) as count FROM Users WHERE email = @email',
+      'SELECT COUNT(*) as count FROM users_Gantt WHERE email = @email',
       { email: { type: sql.NVarChar, value: normalizedEmail } }
     );
 
@@ -33,7 +45,7 @@ export async function POST(request: Request) {
       .slice(0, 2);
 
     // Obtener paleta de colores para asignar uno
-    const countCheck = await executeQuery('SELECT COUNT(*) as count FROM Users');
+    const countCheck = await executeQuery('SELECT COUNT(*) as count FROM users_Gantt');
     const userCount = countCheck.recordset[0].count;
     const colorPalette = ['#4f7cff', '#7c5cfc', '#3ecf8e', '#f5a623', '#ff5c5c', '#38bdf8', '#e879f9', '#fb923c'];
     const color = colorPalette[userCount % colorPalette.length];
@@ -48,7 +60,7 @@ export async function POST(request: Request) {
     const status = (normalizedEmail === 'renerangel@royaltransports.com.mx' || isPM) ? 'active' : 'pending';
 
     await executeQuery(`
-      INSERT INTO Users (id, name, email, initials, color, role, contractType, status, password, imageUrl, availableHours, totalAssignedHours, skills)
+      INSERT INTO users_Gantt (id, name, email, initials, color, role, contractType, status, password, imageUrl, availableHours, totalAssignedHours, skills)
       VALUES (@id, @name, @email, @initials, @color, @role, @contractType, @status, @password, @imageUrl, 40, 0, @skills)
     `, {
       id: { type: sql.NVarChar, value: userId },

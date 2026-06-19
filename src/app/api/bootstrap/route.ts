@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import { executeQuery, sql } from '@/lib/db';
 import { Task, Project, Phase, Milestone, User, Notification, TaskComment } from '@/types';
 import { getAuthenticatedUser } from '@/lib/session';
@@ -16,7 +16,7 @@ export async function GET() {
     // 1. Obtener usuarios (sin contraseñas)
     const usersResult = await executeQuery(`
       SELECT id, name, email, initials, color, role, contractType, status, imageUrl, availableHours, totalAssignedHours, skills 
-      FROM Users
+      FROM users_Gantt
     `);
     const users: User[] = usersResult.recordset.map(u => ({
       ...u,
@@ -24,29 +24,29 @@ export async function GET() {
     }));
 
     // 2. Obtener proyectos
-    const projectsResult = await executeQuery(`
+    const Projects_GanttResult = await executeQuery(`
       SELECT id, name, description, startDate, endDate, status, leaderId 
-      FROM Projects
+      FROM Projects_Gantt
     `);
-    const projects: Project[] = projectsResult.recordset;
+    const Projects_Gantt: Project[] = Projects_GanttResult.recordset;
 
     // 3. Obtener fases
-    const phasesResult = await executeQuery(`
+    const Phases_GanttResult = await executeQuery(`
       SELECT id, name, color, projectId 
-      FROM Phases
+      FROM Phases_Gantt
     `);
-    const phases: Phase[] = phasesResult.recordset;
+    const Phases_Gantt: Phase[] = Phases_GanttResult.recordset;
 
-    // 4. Obtener hitos (milestones)
-    const milestonesResult = await executeQuery(`
+    // 4. Obtener hitos (Milestones_Gantt)
+    const Milestones_GanttResult = await executeQuery(`
       SELECT id, projectId, name, targetDate, description, status 
-      FROM Milestones
+      FROM Milestones_Gantt
     `);
-    const milestones: Milestone[] = milestonesResult.recordset;
+    const Milestones_Gantt: Milestone[] = Milestones_GanttResult.recordset;
 
     // 5. Obtener asignaciones múltiples
     const assigneesResult = await executeQuery(`
-      SELECT taskId, userId FROM TaskAssignees
+      SELECT taskId, userId FROM TaskAssignees_Gantt
     `);
     const assigneesMap: Record<string, string[]> = {};
     assigneesResult.recordset.forEach(a => {
@@ -59,8 +59,8 @@ export async function GET() {
     // 6. Obtener comentarios
     const commentsResult = await executeQuery(`
       SELECT c.id, c.taskId, c.userId, u.name as userName, u.color as userColor, c.content, c.createdAt
-      FROM TaskComments c 
-      JOIN Users u ON c.userId = u.id 
+      FROM TaskComments_Gantt c 
+      JOIN users_Gantt u ON c.userId = u.id 
       ORDER BY c.createdAt ASC
     `);
     const commentsMap: Record<string, TaskComment[]> = {};
@@ -82,7 +82,7 @@ export async function GET() {
     // 7. Obtener tareas
     const tasksResult = await executeQuery(`
       SELECT id, title, phaseId, projectId, milestoneId, startDate, endDate, status, progress, assigneeId, notes, estimatedHours, actualHours, requiredSkills, estimatedBudget, actualCost, materials, dependsOnTaskId, accepted 
-      FROM Tasks
+      FROM Tasks_Gantt
     `);
     const tasks: Task[] = tasksResult.recordset.map(t => ({
       ...t,
@@ -96,12 +96,12 @@ export async function GET() {
     }));
 
     // 8. Obtener notificaciones
-    const notificationsResult = await executeQuery(`
+    const Notifications_GanttResult = await executeQuery(`
       SELECT id, userId, title, message, type, taskId, [read], createdAt 
-      FROM Notifications
+      FROM Notifications_Gantt
       ORDER BY createdAt DESC
     `);
-    const notifications: Notification[] = notificationsResult.recordset.map(n => ({
+    const Notifications_Gantt: Notification[] = Notifications_GanttResult.recordset.map(n => ({
       id: n.id,
       userId: n.userId,
       title: n.title,
@@ -114,12 +114,12 @@ export async function GET() {
 
     return NextResponse.json({
       success: true,
-      users,
-      projects,
-      phases,
-      milestones,
-      tasks,
-      notifications,
+      users_Gantt: users,
+      Projects_Gantt,
+      Phases_Gantt,
+      Milestones_Gantt,
+      Tasks_Gantt: tasks,
+      Notifications_Gantt,
     });
   } catch (error: any) {
     console.error('Error en bootstrap API:', error);

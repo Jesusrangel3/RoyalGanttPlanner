@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import { executeQuery, sql, getDbPool } from '@/lib/db';
 import { getAuthenticatedUser } from '@/lib/session';
 import { Note } from '@/types';
@@ -15,7 +15,7 @@ export async function GET(request: Request) {
   try {
     let query = `
       SELECT id, userId, projectId, taskId, title, content, color, pinned, tags, isShared, createdAt, updatedAt
-      FROM Notes
+      FROM Notes_Gantt
       WHERE userId = @userId OR isShared = 1
     `;
     const params: any = { userId: { type: sql.NVarChar, value: sessionUser.id } };
@@ -27,14 +27,14 @@ export async function GET(request: Request) {
     query += ' ORDER BY pinned DESC, updatedAt DESC';
 
     const result = await executeQuery(query, params);
-    const notes: Note[] = result.recordset.map(n => ({
+    const Notes_Gantt: Note[] = result.recordset.map(n => ({
       ...n,
       pinned: !!n.pinned,
       isShared: !!n.isShared,
       tags: n.tags ? n.tags.split(',').map((t: string) => t.trim()).filter(Boolean) : [],
     }));
 
-    return NextResponse.json({ success: true, notes });
+    return NextResponse.json({ success: true, Notes_Gantt });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
     const id = body.id || 'note_' + Date.now();
 
     await executeQuery(`
-      INSERT INTO Notes (id, userId, projectId, taskId, title, content, color, pinned, tags, isShared, createdAt, updatedAt)
+      INSERT INTO Notes_Gantt (id, userId, projectId, taskId, title, content, color, pinned, tags, isShared, createdAt, updatedAt)
       VALUES (@id, @userId, @projectId, @taskId, @title, @content, @color, @pinned, @tags, @isShared, GETDATE(), GETDATE())
     `, {
       id: { type: sql.NVarChar, value: id },
@@ -79,7 +79,7 @@ export async function PUT(request: Request) {
     if (!body.id) return NextResponse.json({ success: false, error: 'ID requerido' }, { status: 400 });
 
     await executeQuery(`
-      UPDATE Notes
+      UPDATE Notes_Gantt
       SET title = @title, content = @content, color = @color, pinned = @pinned,
           tags = @tags, isShared = @isShared, projectId = @projectId, updatedAt = GETDATE()
       WHERE id = @id AND userId = @userId
@@ -110,7 +110,7 @@ export async function DELETE(request: Request) {
   if (!id) return NextResponse.json({ success: false, error: 'ID requerido' }, { status: 400 });
 
   try {
-    await executeQuery('DELETE FROM Notes WHERE id = @id AND userId = @userId', {
+    await executeQuery('DELETE FROM Notes_Gantt WHERE id = @id AND userId = @userId', {
       id: { type: sql.NVarChar, value: id },
       userId: { type: sql.NVarChar, value: sessionUser.id },
     });

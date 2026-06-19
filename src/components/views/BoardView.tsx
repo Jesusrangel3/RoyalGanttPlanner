@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
  
 import { useState } from "react";
 import { Plus, Check } from "lucide-react";
@@ -15,8 +15,8 @@ const COLUMNS: { id: TaskStatus; label: string; color: string; bg: string }[] = 
   { id: "blocked",     label: "Bloqueado",            color: "#ff5c5c", bg: "border-[#ff5c5c]/30" },
 ];
  
-function Avatar({ userId, users }: { userId: string; users: AuthUser[] }) {
-  const user = users.find((u) => u.id === userId);
+function Avatar({ userId, users_Gantt }: { userId: string; users_Gantt: AuthUser[] }) {
+  const user = users_Gantt.find((u) => u.id === userId);
   if (!user) return null;
   if (user.imageUrl) {
     return (
@@ -45,13 +45,13 @@ interface TaskCardProps {
   onDropOnCard: (targetTaskId: string) => void;
   onToggleComplete: (task: Task) => void;
   onClick: () => void;
-  users: AuthUser[];
-  phases: Phase[];
+  users_Gantt: AuthUser[];
+  Phases_Gantt: Phase[];
 }
  
-function TaskCard({ task, onDragStart, onDropOnCard, onToggleComplete, onClick, users, phases }: TaskCardProps) {
-  const phase = phases.find((p) => p.id === task.phaseId);
-  const assignee = users.find((u) => u.id === task.assigneeId);
+function TaskCard({ task, onDragStart, onDropOnCard, onToggleComplete, onClick, users_Gantt, Phases_Gantt }: TaskCardProps) {
+  const phase = Phases_Gantt.find((p) => p.id === task.phaseId);
+  const assignee = users_Gantt.find((u) => u.id === task.assigneeId);
   const currentUser = getSessionUser();
   const isPM = currentUser?.role === "Project Manager";
   const isAssignee = currentUser && (task.assigneeIds?.includes(currentUser.id) || task.assigneeId === currentUser.id);
@@ -124,16 +124,16 @@ function TaskCard({ task, onDragStart, onDropOnCard, onToggleComplete, onClick, 
         <div className="flex items-center gap-1.5 min-w-0 flex-1">
           <div className="flex -space-x-1.5 overflow-hidden flex-shrink-0">
             {(task.assigneeIds && task.assigneeIds.length > 0 ? task.assigneeIds : [task.assigneeId]).map((uid) => (
-              <Avatar key={uid} userId={uid} users={users} />
+              <Avatar key={uid} userId={uid} users_Gantt={users_Gantt} />
             ))}
           </div>
           <span className="text-[10px] text-[#8b93b8] truncate" title={
             task.assigneeIds && task.assigneeIds.length > 0 
-              ? users.filter(u => task.assigneeIds?.includes(u.id)).map(u => u.name).join(", ")
+              ? users_Gantt.filter(u => task.assigneeIds?.includes(u.id)).map(u => u.name).join(", ")
               : assignee?.name
           }>
             {task.assigneeIds && task.assigneeIds.length > 0 
-              ? users.filter(u => task.assigneeIds?.includes(u.id)).map(u => u.name.split(" ")[0]).join(", ")
+              ? users_Gantt.filter(u => task.assigneeIds?.includes(u.id)).map(u => u.name.split(" ")[0]).join(", ")
               : assignee?.name.split(" ")[0]}
           </span>
         </div>
@@ -146,20 +146,20 @@ function TaskCard({ task, onDragStart, onDropOnCard, onToggleComplete, onClick, 
 }
  
 interface BoardViewProps {
-  tasks: Task[];
-  setTasks: (tasks: Task[] | ((prev: Task[]) => Task[])) => void;
-  phases: Phase[];
-  milestones: Milestone[];
-  users: AuthUser[];
+  Tasks_Gantt: Task[];
+  setTasks: (Tasks_Gantt: Task[] | ((prev: Task[]) => Task[])) => void;
+  Phases_Gantt: Phase[];
+  Milestones_Gantt: Milestone[];
+  users_Gantt: AuthUser[];
   activeProjectId: string;
 }
  
 export default function BoardView({
-  tasks,
+  Tasks_Gantt,
   setTasks,
-  phases,
-  milestones,
-  users,
+  Phases_Gantt,
+  Milestones_Gantt,
+  users_Gantt,
   activeProjectId,
 }: BoardViewProps) {
   const [dragging, setDragging] = useState<string | null>(null);
@@ -169,7 +169,7 @@ export default function BoardView({
  
   function handleDrop(status: TaskStatus) {
     if (!dragging) return;
-    const task = tasks.find((t) => t.id === dragging);
+    const task = Tasks_Gantt.find((t) => t.id === dragging);
     if (!task) return;
  
     const isAssignee = currentUser && (task.assigneeIds?.includes(currentUser.id) || task.assigneeId === currentUser.id);
@@ -224,8 +224,8 @@ export default function BoardView({
   function handleDropOnCard(targetTaskId: string) {
     if (!dragging || dragging === targetTaskId) return;
     
-    const draggedTask = tasks.find(t => t.id === dragging);
-    const targetTask = tasks.find(t => t.id === targetTaskId);
+    const draggedTask = Tasks_Gantt.find(t => t.id === dragging);
+    const targetTask = Tasks_Gantt.find(t => t.id === targetTaskId);
     if (!draggedTask || !targetTask) return;
  
     const isAssignee = currentUser && (draggedTask.assigneeIds?.includes(currentUser.id) || draggedTask.assigneeId === currentUser.id);
@@ -352,14 +352,14 @@ export default function BoardView({
       <div className="flex items-center gap-3 px-4 py-2 border-b border-[#2e3352] bg-[#1a1d27] flex-shrink-0">
         <span className="text-xs text-[#8b93b8]">Agrupar por: <span className="text-[#e8eaf6] font-medium">Estado</span></span>
         <span className="text-[10px] text-[#8b93b8] bg-[#22263a] border border-[#2e3352] rounded px-2 py-0.5">
-          {tasks.length} tareas
+          {Tasks_Gantt.length} tareas
         </span>
       </div>
  
       {/* Columns */}
       <div className="flex gap-4 flex-1 overflow-x-auto p-4 items-start">
         {COLUMNS.map((col) => {
-          const colTasks = tasks
+          const colTasks = Tasks_Gantt
             .filter((t) => t.status === col.id)
             .sort((a, b) => (a.boardOrder || 0) - (b.boardOrder || 0));
           return (
@@ -400,8 +400,8 @@ export default function BoardView({
                   <TaskCard
                     key={task.id}
                     task={task}
-                    users={users}
-                    phases={phases}
+                    users_Gantt={users_Gantt}
+                    Phases_Gantt={Phases_Gantt}
                     onDragStart={setDragging}
                     onDropOnCard={handleDropOnCard}
                     onToggleComplete={handleToggleComplete}
@@ -418,10 +418,10 @@ export default function BoardView({
       {modalTask !== false && (
         <TaskModal
           task={modalTask}
-          users={users}
-          milestones={milestones}
-          tasks={tasks}
-          phases={phases}
+          users_Gantt={users_Gantt}
+          Milestones_Gantt={Milestones_Gantt}
+          Tasks_Gantt={Tasks_Gantt}
+          Phases_Gantt={Phases_Gantt}
           onClose={() => setModalTask(false)}
           onSave={handleSaveTask}
           onDelete={handleDeleteTask}

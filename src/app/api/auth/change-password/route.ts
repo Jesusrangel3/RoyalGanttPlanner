@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import { executeQuery, sql } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { getAuthenticatedUser } from '@/lib/session';
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
 
     // 3. Buscar el usuario actual en la base de datos
     const result = await executeQuery(
-      'SELECT password FROM Users WHERE id = @id',
+      'SELECT password FROM users_Gantt WHERE id = @id',
       { id: { type: sql.NVarChar, value: sessionUser.id } }
     );
 
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
 
     // 6. Actualizar la contraseña y desactivar el cambio obligatorio en la DB
     await executeQuery(
-      `UPDATE Users 
+      `UPDATE users_Gantt 
        SET password = @newPassword, mustChangePassword = 0 
        WHERE id = @id`,
       {

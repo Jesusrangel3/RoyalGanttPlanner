@@ -1,11 +1,11 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { Activity, Filter, RefreshCw, FileText, FolderOpen, Users, Layers, Flag, StickyNote } from "lucide-react";
-import { ActivityLog, AuthUser } from "@/types";
+import { ActivityLog_Gantt, AuthUser } from "@/types";
 
 interface ActivityViewProps {
-  users: AuthUser[];
+  users_Gantt: AuthUser[];
   currentUser: AuthUser | null;
 }
 
@@ -27,8 +27,8 @@ const ENTITY_ICONS: Record<string, React.ReactNode> = {
   note:      <StickyNote size={13} />,
 };
 
-export default function ActivityView({ users, currentUser }: ActivityViewProps) {
-  const [logs, setLogs] = useState<ActivityLog[]>([]);
+export default function ActivityView({ users_Gantt, currentUser }: ActivityViewProps) {
+  const [logs, setLogs] = useState<ActivityLog_Gantt[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterEntity, setFilterEntity] = useState<string>("all");
   const [filterUser, setFilterUser] = useState<string>("all");
@@ -57,7 +57,7 @@ export default function ActivityView({ users, currentUser }: ActivityViewProps) 
   });
 
   // Agrupar por fecha
-  const groups: Record<string, ActivityLog[]> = {};
+  const groups: Record<string, ActivityLog_Gantt[]> = {};
   filteredLogs.forEach((log) => {
     const dateKey = log.createdAt.split(",")[0] || log.createdAt.split(" ")[0];
     if (!groups[dateKey]) groups[dateKey] = [];
@@ -99,7 +99,7 @@ export default function ActivityView({ users, currentUser }: ActivityViewProps) 
               className="bg-[#0f1117] border border-[#2e3352] text-[#e8eaf6] text-xs rounded px-2 py-1 outline-none"
             >
               <option value="all">Todos los usuarios</option>
-              {users.map((u) => (
+              {users_Gantt.map((u) => (
                 <option key={u.id} value={u.id}>{u.name}</option>
               ))}
             </select>
@@ -139,7 +139,7 @@ export default function ActivityView({ users, currentUser }: ActivityViewProps) 
                   {dateLogs.map((log) => {
                     const actionMeta = ACTION_LABELS[log.action] || { label: log.action, color: "#8b93b8" };
                     const entityIcon = ENTITY_ICONS[log.entityType] || <FileText size={13} />;
-                    const logUser = users.find((u) => u.id === log.userId);
+                    const logUser = users_Gantt.find((u) => u.id === log.userId);
 
                     return (
                       <div

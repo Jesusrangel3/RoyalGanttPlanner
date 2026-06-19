@@ -1,14 +1,14 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { Folder, Plus, Edit3, Trash2, Calendar, Target, Clock, DollarSign, Users, X, AlertTriangle, ArrowRight, CheckCircle2 } from "lucide-react";
 import { Project, Task, AuthUser } from "@/types";
 
-interface ProjectsViewProps {
-  projects: Project[];
-  setProjects: (projects: Project[] | ((prev: Project[]) => Project[])) => void;
-  tasks: Task[];
-  users: AuthUser[];
+interface Projects_GanttViewProps {
+  Projects_Gantt: Project[];
+  setProjects_Gantt: (Projects_Gantt: Project[] | ((prev: Project[]) => Project[])) => void;
+  Tasks_Gantt: Task[];
+  users_Gantt: AuthUser[];
   currentUser: AuthUser;
   activeProjectId: string;
   setActiveProjectId: (id: string) => void;
@@ -19,16 +19,16 @@ const INPUT = "bg-[#22263a] border border-[#2e3352] text-[#e8eaf6] rounded-lg px
 const BTN = "px-3 py-1.5 rounded-lg border border-[#2e3352] bg-[#22263a] text-[#e8eaf6] text-xs font-medium hover:border-[#4f7cff] transition-all cursor-pointer flex items-center justify-center gap-1.5";
 const BTN_PRIMARY = "px-3 py-1.5 rounded-lg bg-[#4f7cff] border border-[#4f7cff] text-white text-xs font-medium hover:bg-[#3a6be0] transition-all cursor-pointer flex items-center justify-center gap-1.5";
 
-export default function ProjectsView({
-  projects,
-  setProjects,
-  tasks,
-  users,
+export default function Projects_GanttView({
+  Projects_Gantt,
+  setProjects_Gantt,
+  Tasks_Gantt,
+  users_Gantt,
   currentUser,
   activeProjectId,
   setActiveProjectId,
   setActiveTab,
-}: ProjectsViewProps) {
+}: Projects_GanttViewProps) {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
   const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
@@ -56,7 +56,7 @@ export default function ProjectsView({
       status: form.status,
       leaderId: form.leaderId,
     };
-    setProjects((prev) => [...prev, newProj]);
+    setProjects_Gantt((prev) => [...prev, newProj]);
     setShowAddModal(false);
     // Reset form
     setForm({
@@ -71,17 +71,17 @@ export default function ProjectsView({
 
   function handleUpdate() {
     if (!editingProject || !editingProject.name.trim() || !editingProject.startDate || !editingProject.endDate) return;
-    setProjects((prev) =>
+    setProjects_Gantt((prev) =>
       prev.map((p) => (p.id === editingProject.id ? editingProject : p))
     );
     setEditingProject(null);
   }
 
   function handleDelete(id: string) {
-    setProjects((prev) => prev.filter((p) => p.id !== id));
+    setProjects_Gantt((prev) => prev.filter((p) => p.id !== id));
     setDeletingProjectId(null);
     if (activeProjectId === id) {
-      const remaining = projects.filter((p) => p.id !== id);
+      const remaining = Projects_Gantt.filter((p) => p.id !== id);
       if (remaining.length > 0) {
         setActiveProjectId(remaining[0].id);
       }
@@ -118,11 +118,11 @@ export default function ProjectsView({
         )}
       </div>
 
-      {/* Grid of Projects */}
+      {/* Grid of Projects_Gantt */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {projects.map((proj) => {
+        {Projects_Gantt.map((proj) => {
           // Calculate project specific statistics
-          const projTasks = tasks.filter((t) => t.projectId === proj.id || (!t.projectId && proj.id === "proj1"));
+          const projTasks = Tasks_Gantt.filter((t) => t.projectId === proj.id || (!t.projectId && proj.id === "proj1"));
           const totalTasks = projTasks.length;
           const completedTasks = projTasks.filter((t) => t.status === "done").length;
           const progress = totalTasks
@@ -134,7 +134,7 @@ export default function ProjectsView({
           const budgetVariance = estimatedBudget - actualCost;
           const isOverBudget = budgetVariance < 0;
 
-          const leader = users.find((u) => u.id === proj.leaderId) || {
+          const leader = users_Gantt.find((u) => u.id === proj.leaderId) || {
             id: "",
             name: "Sin Asignar",
             initials: "SA",
@@ -152,7 +152,7 @@ export default function ProjectsView({
               ).filter(Boolean)
             )
           );
-          const team = users.filter((u) => assignedIds.includes(u.id));
+          const team = users_Gantt.filter((u) => assignedIds.includes(u.id));
 
           const statusLabels = {
             planning: { text: "Planificación", color: "bg-blue-500/10 text-blue-400 border-blue-500/20" },
@@ -200,7 +200,7 @@ export default function ProjectsView({
                       >
                         <Edit3 size={12} />
                       </button>
-                      {projects.length > 1 && (
+                      {Projects_Gantt.length > 1 && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -413,12 +413,12 @@ export default function ProjectsView({
                     value={form.leaderId}
                     onChange={(e) => setForm((p) => ({ ...p, leaderId: e.target.value }))}
                   >
-                    {users.filter(u => u.role?.toString().trim().toLowerCase() === "project manager").map((u) => (
+                    {users_Gantt.filter(u => u.role?.toString().trim().toLowerCase() === "project manager").map((u) => (
                       <option key={u.id} value={u.id}>
                         {u.name}
                       </option>
                     ))}
-                    {users.filter(u => u.role?.toString().trim().toLowerCase() === "project manager").every(u => u.id !== currentUser.id) && currentUser.role?.toString().trim().toLowerCase() === "project manager" && (
+                    {users_Gantt.filter(u => u.role?.toString().trim().toLowerCase() === "project manager").every(u => u.id !== currentUser.id) && currentUser.role?.toString().trim().toLowerCase() === "project manager" && (
                       <option key={currentUser.id} value={currentUser.id}>
                         {currentUser.name}
                       </option>
@@ -515,12 +515,12 @@ export default function ProjectsView({
                     value={editingProject.leaderId}
                     onChange={(e) => setEditingProject((p) => p ? { ...p, leaderId: e.target.value } : null)}
                   >
-                    {users.filter(u => u.role?.toString().trim().toLowerCase() === "project manager").map((u) => (
+                    {users_Gantt.filter(u => u.role?.toString().trim().toLowerCase() === "project manager").map((u) => (
                       <option key={u.id} value={u.id}>
                         {u.name}
                       </option>
                     ))}
-                    {users.filter(u => u.role?.toString().trim().toLowerCase() === "project manager").every(u => u.id !== currentUser.id) && currentUser.role?.toString().trim().toLowerCase() === "project manager" && (
+                    {users_Gantt.filter(u => u.role?.toString().trim().toLowerCase() === "project manager").every(u => u.id !== currentUser.id) && currentUser.role?.toString().trim().toLowerCase() === "project manager" && (
                       <option key={currentUser.id} value={currentUser.id}>
                         {currentUser.name}
                       </option>

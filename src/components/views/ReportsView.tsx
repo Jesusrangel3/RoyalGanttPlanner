@@ -1,27 +1,27 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect } from "react";
 import { Printer, TrendingUp, DollarSign, Clock, Package, Milestone as StoneIcon, CheckCircle, AlertTriangle, User, Edit3 } from "lucide-react";
 import { Task, Project, Milestone, AuthUser } from "@/types";
 
 interface ReportsViewProps {
-  tasks: Task[];
-  projects: Project[];
-  setProjects: (projects: Project[] | ((prev: Project[]) => Project[])) => void;
-  milestones: Milestone[];
-  users: AuthUser[];
+  Tasks_Gantt: Task[];
+  Projects_Gantt: Project[];
+  setProjects_Gantt: (Projects_Gantt: Project[] | ((prev: Project[]) => Project[])) => void;
+  Milestones_Gantt: Milestone[];
+  users_Gantt: AuthUser[];
   activeProjectId: string;
 }
 
 export default function ReportsView({
-  tasks,
-  projects,
-  setProjects,
-  milestones,
-  users,
+  Tasks_Gantt,
+  Projects_Gantt,
+  setProjects_Gantt,
+  Milestones_Gantt,
+  users_Gantt,
   activeProjectId,
 }: ReportsViewProps) {
-  const activeProj = projects.find((p) => p.id === activeProjectId) || projects[0] || {
+  const activeProj = Projects_Gantt.find((p) => p.id === activeProjectId) || Projects_Gantt[0] || {
     id: "proj1",
     name: "Royal Gantt Planner",
     description: "Gestión de proyectos con Gantt y recursos",
@@ -50,7 +50,7 @@ export default function ReportsView({
 
   function handleSaveProject() {
     if (!editForm.name.trim() || !editForm.startDate || !editForm.endDate) return;
-    setProjects((prev) => prev.map((p) => p.id === activeProj.id ? {
+    setProjects_Gantt((prev) => prev.map((p) => p.id === activeProj.id ? {
       ...p,
       name: editForm.name.trim(),
       description: editForm.description ? editForm.description.trim() : undefined,
@@ -63,8 +63,8 @@ export default function ReportsView({
   }
 
   // Filtrar tareas y metas de este proyecto
-  const projTasks = tasks.filter(t => t.projectId === activeProj.id || !t.projectId);
-  const projMilestones = milestones.filter(m => m.projectId === activeProj.id);
+  const projTasks = Tasks_Gantt.filter(t => t.projectId === activeProj.id || !t.projectId);
+  const projMilestones_Gantt = Milestones_Gantt.filter(m => m.projectId === activeProj.id);
 
   // Cálculos dinámicos de tareas
   const totalTasksCount = projTasks.length;
@@ -140,9 +140,9 @@ export default function ReportsView({
   const progressDiff = avgProgress - avgPlannedProgress; // Positivo es antelación (adelantado), negativo retraso
 
   // Miembros del equipo
-  const leader = users.find(u => u.id === activeProj.leaderId) || users[0] || { name: "Sin Asignar", initials: "SA", color: "#8b93b8", role: "Project Manager" };
+  const leader = users_Gantt.find(u => u.id === activeProj.leaderId) || users_Gantt[0] || { name: "Sin Asignar", initials: "SA", color: "#8b93b8", role: "Project Manager" };
   const assignedUserIds = Array.from(new Set(projTasks.flatMap(t => t.assigneeIds && t.assigneeIds.length > 0 ? t.assigneeIds : [t.assigneeId]).filter(Boolean)));
-  const teamMembers = users.filter(u => assignedUserIds.includes(u.id));
+  const teamMembers = users_Gantt.filter(u => assignedUserIds.includes(u.id));
 
   // Materiales asignados
   const materialAllocations: { material: string; taskTitle: string }[] = [];
@@ -155,7 +155,7 @@ export default function ReportsView({
   });
 
   // Hitos logrados vs pendientes
-  const achievedMS = projMilestones.filter(m => m.status === "achieved").length;
+  const achievedMS = projMilestones_Gantt.filter(m => m.status === "achieved").length;
 
   // Escala para gráficos de barra vertical (Horas)
   const maxHours = Math.max(totalEstimatedHours, totalActualHours, 1);
@@ -683,7 +683,7 @@ export default function ReportsView({
           </h2>
 
           <div className="space-y-4">
-            {users.map(u => {
+            {users_Gantt.map(u => {
               const userTasks = projTasks.filter(t => (t.assigneeIds?.includes(u.id) || t.assigneeId === u.id) && t.status !== "done");
               const estimated = userTasks.reduce((sum, t) => sum + (t.estimatedHours || 0), 0);
               const limit = u.availableHours || 40;
@@ -757,7 +757,7 @@ export default function ReportsView({
         </h2>
 
         <div className="relative pl-4 border-l border-[#2e3352] space-y-5 py-2">
-          {projMilestones.map(ms => {
+          {projMilestones_Gantt.map(ms => {
             const colorMap = {
               pending: "bg-yellow-500",
               achieved: "bg-[#3ecf8e]",
@@ -785,7 +785,7 @@ export default function ReportsView({
               </div>
             );
           })}
-          {projMilestones.length === 0 && (
+          {projMilestones_Gantt.length === 0 && (
             <p className="text-[10px] text-[#8b93b8] italic">No hay metas declaradas para este proyecto.</p>
           )}
         </div>
@@ -849,7 +849,7 @@ export default function ReportsView({
                     value={editForm.leaderId}
                     onChange={(e) => setEditForm((p) => ({ ...p, leaderId: e.target.value }))}
                   >
-                    {users.map((u) => (
+                    {users_Gantt.map((u) => (
                       <option key={u.id} value={u.id}>{u.name} ({u.role})</option>
                     ))}
                   </select>

@@ -1,3 +1,49 @@
+# Dependencias
 node_modules/
+.pnp
+.pnp.js
+
+# Next.js build
 .next/
+out/
+
+# Debug logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Variables de entorno — NUNCA subir a control de versiones
+.env
 .env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Carpeta de subida de archivos (generada en runtime)
+public/uploads/
+
+# TypeScript
+*.tsbuildinfo
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+
+# Vercel
+.vercel
+
+# Logs de producción
+logs/
+*.log
+
+# Archivos de respaldo SQL (generados, no fuente)
+*.bak
+RoyalGanttPlanner/

@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import { executeQuery, sql } from '@/lib/db';
 import { getAuthenticatedUser } from '@/lib/session';
 
@@ -25,14 +25,14 @@ export async function GET(request: Request) {
 
     const result = await executeQuery(`
       SELECT id, userId, title, message, type, taskId, [read], createdAt 
-      FROM Notifications 
+      FROM Notifications_Gantt 
       WHERE userId = @userId 
       ORDER BY createdAt DESC
     `, {
       userId: { type: sql.NVarChar, value: userId }
     });
 
-    const notifications = result.recordset.map(n => ({
+    const Notifications_Gantt = result.recordset.map(n => ({
       id: n.id,
       userId: n.userId,
       title: n.title,
@@ -43,7 +43,7 @@ export async function GET(request: Request) {
       createdAt: new Date(n.createdAt).toLocaleString('es', { dateStyle: 'short', timeStyle: 'short' })
     }));
 
-    return NextResponse.json({ success: true, notifications });
+    return NextResponse.json({ success: true, Notifications_Gantt });
   } catch (error: any) {
     console.error('Error al obtener notificaciones:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
@@ -66,7 +66,7 @@ export async function POST(request: Request) {
     }
 
     await executeQuery(`
-      INSERT INTO Notifications (id, userId, title, message, type, taskId, [read], createdAt)
+      INSERT INTO Notifications_Gantt (id, userId, title, message, type, taskId, [read], createdAt)
       VALUES (@id, @userId, @title, @message, @type, @taskId, @read, GETDATE())
     `, {
       id: { type: sql.NVarChar, value: id },
@@ -98,7 +98,7 @@ export async function PUT(request: Request) {
 
     if (id) {
       await executeQuery(`
-        UPDATE Notifications
+        UPDATE Notifications_Gantt
         SET [read] = @read
         WHERE id = @id AND userId = @userId
       `, {
@@ -112,7 +112,7 @@ export async function PUT(request: Request) {
       }
 
       await executeQuery(`
-        UPDATE Notifications
+        UPDATE Notifications_Gantt
         SET [read] = @read
         WHERE userId = @userId
       `, {
@@ -149,7 +149,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ success: false, error: 'Acceso denegado. No puede eliminar notificaciones de otro usuario.' }, { status: 403 });
     }
 
-    await executeQuery('DELETE FROM Notifications WHERE userId = @userId', {
+    await executeQuery('DELETE FROM Notifications_Gantt WHERE userId = @userId', {
       userId: { type: sql.NVarChar, value: userId }
     });
 

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState, useRef } from "react";
 import { io } from "socket.io-client";
@@ -23,17 +23,17 @@ import { Task, Phase, Project, Milestone, Notification } from "@/types";
  * Habilita multi-proyectos, informes y aprobaciones administrativas.
  */
 
-type Tab = "gantt" | "board" | "calendar" | "reports" | "users" | "projects" | "notes" | "activity";
+type Tab = "gantt" | "board" | "calendar" | "reports" | "users_Gantt" | "Projects_Gantt" | "Notes_Gantt" | "activity";
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
-  { id: "projects",  label: "Proyectos",         icon: <Briefcase size={15} /> },
+  { id: "Projects_Gantt",  label: "Proyectos",         icon: <Briefcase size={15} /> },
   { id: "gantt",     label: "Diagrama de Gantt", icon: <LayoutDashboard size={15} /> },
   { id: "board",     label: "Tablero",           icon: <Trello size={15} /> },
   { id: "calendar",  label: "Calendario",        icon: <Calendar size={15} /> },
   { id: "reports",   label: "Informes",          icon: <BarChart2 size={15} /> },
-  { id: "notes",     label: "Notas",             icon: <StickyNote size={15} /> },
+  { id: "Notes_Gantt",     label: "Notas",             icon: <StickyNote size={15} /> },
   { id: "activity",  label: "Actividad",         icon: <Activity size={15} /> },
-  { id: "users",     label: "Personas",          icon: <Users size={15} /> },
+  { id: "users_Gantt",     label: "Personas",          icon: <Users size={15} /> },
 ];
 
 function getShortName(fullName: string): string {
@@ -65,11 +65,11 @@ function getShortName(fullName: string): string {
   return `${firstName} ${lastName}`.trim();
 }
 
-const STORAGE_TASKS_KEY = "ganttpro-tasks";
-const STORAGE_PHASES_KEY = "ganttpro-phases";
-const STORAGE_PROJECTS_KEY = "ganttpro-projects";
-const STORAGE_MILESTONES_KEY = "ganttpro-milestones";
-const STORAGE_USERS_KEY = "ganttpro-auth-users";
+const STORAGE_TASKS_KEY = "ganttpro-Tasks_Gantt";
+const STORAGE_Phases_Gantt_KEY = "ganttpro-Phases_Gantt";
+const STORAGE_Projects_Gantt_KEY = "ganttpro-Projects_Gantt";
+const STORAGE_Milestones_Gantt_KEY = "ganttpro-Milestones_Gantt";
+const STORAGE_USERS_KEY = "ganttpro-auth-users_Gantt";
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<Tab>("gantt");
@@ -135,16 +135,19 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [isOffline, user]);
 
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [phases, setPhases] = useState<Phase[]>([]);
-  const [projects, setProjects] = useState<Project[]>([]);
-  const [milestones, setMilestones] = useState<Milestone[]>([]);
-  const [users, setUsers] = useState<AuthUser[]>([]);
+  const [Tasks_Gantt, setTasks] = useState<Task[]>([]);
+  const [Phases_Gantt, setPhases_Gantt] = useState<Phase[]>([]);
+  const [Projects_Gantt, setProjects_Gantt] = useState<Project[]>([]);
+  const [Milestones_Gantt, setMilestones_Gantt] = useState<Milestone[]>([]);
+  const [users_Gantt, setUsers] = useState<AuthUser[]>([]);
+  // aliases para compatibilidad con referencias que usan nombre corto
+  const tasks = Tasks_Gantt;
+  const users = users_Gantt;
 
   // Notificaciones y navegación por tareas
-  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [Notifications_Gantt, setNotifications_Gantt] = useState<Notification[]>([]);
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
-  const [showNotifications, setShowNotifications] = useState(false);
+  const [showNotifications_Gantt, setShowNotifications_Gantt] = useState(false);
 
   // Proyecto Activo Seleccionado
   const [activeProjectId, setActiveProjectId] = useState<string>("proj1");
@@ -158,19 +161,19 @@ export default function Home() {
       const res = await fetch('/api/bootstrap');
       const data = await res.json();
       if (data.success) {
-        setTasks(data.tasks);
-        setPhases(data.phases);
-        setProjects(data.projects);
-        setMilestones(data.milestones);
-        setUsers(data.users);
-        setNotifications(data.notifications);
+        setTasks(data.Tasks_Gantt);
+        setPhases_Gantt(data.Phases_Gantt);
+        setProjects_Gantt(data.Projects_Gantt);
+        setMilestones_Gantt(data.Milestones_Gantt);
+        setUsers(data.users_Gantt);
+        setNotifications_Gantt(data.Notifications_Gantt);
         
-        if (data.projects.length > 0) {
+        if (data.Projects_Gantt.length > 0) {
           const savedActiveProj = localStorage.getItem("ganttpro-active-project-id");
-          if (savedActiveProj && data.projects.some((p: any) => p.id === savedActiveProj)) {
+          if (savedActiveProj && data.Projects_Gantt.some((p: any) => p.id === savedActiveProj)) {
             setActiveProjectId(savedActiveProj);
           } else {
-            setActiveProjectId(data.projects[0].id);
+            setActiveProjectId(data.Projects_Gantt[0].id);
           }
         }
       } else {
@@ -275,36 +278,38 @@ export default function Home() {
 
     newSocket.on("connect", () => {
       console.log("Conectado al servidor de sincronización en tiempo real");
+      // Unirse a la sala personal para recibir notificaciones dirigidas
+      newSocket.emit("join-user-room", user.id);
     });
 
-    newSocket.on("update-tasks", (updatedTasks: Task[]) => {
+    newSocket.on("update-Tasks_Gantt", (updatedTasks: Task[]) => {
       setTasks(updatedTasks);
     });
 
-    newSocket.on("update-projects", (updatedProjects: Project[]) => {
-      setProjects(updatedProjects);
+    newSocket.on("update-Projects_Gantt", (updatedProjects_Gantt: Project[]) => {
+      setProjects_Gantt(updatedProjects_Gantt);
     });
 
-    newSocket.on("update-phases", (updatedPhases: Phase[]) => {
-      setPhases(updatedPhases);
+    newSocket.on("update-Phases_Gantt", (updatedPhases_Gantt: Phase[]) => {
+      setPhases_Gantt(updatedPhases_Gantt);
     });
 
-    newSocket.on("update-milestones", (updatedMilestones: Milestone[]) => {
-      setMilestones(updatedMilestones);
+    newSocket.on("update-Milestones_Gantt", (updatedMilestones_Gantt: Milestone[]) => {
+      setMilestones_Gantt(updatedMilestones_Gantt);
     });
 
-    newSocket.on("update-users", (updatedUsers: AuthUser[]) => {
+    newSocket.on("update-users_Gantt", (updatedUsers: AuthUser[]) => {
       setUsers(updatedUsers);
     });
 
-    newSocket.on("update-notifications", (updatedNotifications: Notification[]) => {
-      setNotifications((prevNotifications) => {
+    newSocket.on("update-Notifications_Gantt", (updatedNotifications_Gantt: Notification[]) => {
+      setNotifications_Gantt((prevNotifications_Gantt) => {
         if (!isInitialLoadRef.current) {
-          const newAssignments = updatedNotifications.filter(n => 
+          const newAssignments = updatedNotifications_Gantt.filter(n => 
             n.userId === user.id && 
             !n.read && 
             n.type === "assignment" && 
-            !prevNotifications.some(p => p.id === n.id)
+            !prevNotifications_Gantt.some(p => p.id === n.id)
           );
           newAssignments.forEach(n => {
             setToasts(curr => {
@@ -318,7 +323,23 @@ export default function Home() {
             });
           });
         }
-        return updatedNotifications;
+        return updatedNotifications_Gantt;
+      });
+    });
+
+    // Notificación dirigida (solo para este usuario, sin filtrar)
+    newSocket.on("new-notification", (notification: Notification) => {
+      setNotifications_Gantt(prev => {
+        if (prev.some(p => p.id === notification.id)) return prev;
+        if (!notification.read && notification.type === "assignment") {
+          setToasts(curr => curr.some(t => t.id === notification.id) ? curr : [...curr, {
+            id: notification.id,
+            title: notification.title,
+            message: notification.message,
+            taskId: notification.taskId,
+          }]);
+        }
+        return [notification, ...prev];
       });
     });
 
@@ -331,12 +352,12 @@ export default function Home() {
   }, [user?.id]);
 
   const handleSetTasks = (newTasks: Task[] | ((prev: Task[]) => Task[])) => {
-    const prev = tasks;
+    const prev = Tasks_Gantt;
     const next = typeof newTasks === "function" ? newTasks(prev) : newTasks;
     setTasks(next);
 
     if (socketRef.current) {
-      socketRef.current.emit("sync-tasks", next);
+      socketRef.current.emit("sync-Tasks_Gantt", next);
     }
 
     // Sincronizar con el servidor
@@ -510,10 +531,10 @@ export default function Home() {
       });
 
       if (generatedAlerts.length > 0) {
-        setNotifications((curr) => {
+        setNotifications_Gantt((curr) => {
           const updated = [...generatedAlerts, ...curr];
           if (socketRef.current) {
-            socketRef.current.emit("sync-notifications", updated);
+            socketRef.current.emit("sync-Notifications_Gantt", updated);
           }
           return updated;
         });
@@ -529,13 +550,13 @@ export default function Home() {
     }
   };
 
-  const handleSetPhases = (newPhases: Phase[] | ((prev: Phase[]) => Phase[])) => {
-    const prev = phases;
-    const next = typeof newPhases === "function" ? newPhases(prev) : newPhases;
-    setPhases(next);
+  const handleSetPhases_Gantt = (newPhases_Gantt: Phase[] | ((prev: Phase[]) => Phase[])) => {
+    const prev = Phases_Gantt;
+    const next = typeof newPhases_Gantt === "function" ? newPhases_Gantt(prev) : newPhases_Gantt;
+    setPhases_Gantt(next);
 
     if (socketRef.current) {
-      socketRef.current.emit("sync-phases", next);
+      socketRef.current.emit("sync-Phases_Gantt", next);
     }
 
     const added = next.filter(n => !prev.some(p => p.id === n.id));
@@ -566,13 +587,13 @@ export default function Home() {
     });
   };
 
-  const handleSetProjects = (newProjects: Project[] | ((prev: Project[]) => Project[])) => {
-    const prev = projects;
-    const next = typeof newProjects === "function" ? newProjects(prev) : newProjects;
-    setProjects(next);
+  const handleSetProjects_Gantt = (newProjects_Gantt: Project[] | ((prev: Project[]) => Project[])) => {
+    const prev = Projects_Gantt;
+    const next = typeof newProjects_Gantt === "function" ? newProjects_Gantt(prev) : newProjects_Gantt;
+    setProjects_Gantt(next);
 
     if (socketRef.current) {
-      socketRef.current.emit("sync-projects", next);
+      socketRef.current.emit("sync-Projects_Gantt", next);
     }
 
     const added = next.filter(n => !prev.some(p => p.id === n.id));
@@ -584,17 +605,24 @@ export default function Home() {
       })
       .then(res => res.json())
       .then(data => {
-        if (data.success && data.defaultPhases) {
-          setPhases(prevPhases => {
-            const updated = [...prevPhases, ...data.defaultPhases];
+        if (data.success && data.defaultPhases_Gantt) {
+          setPhases_Gantt(prevPhases_Gantt => {
+            const updated = [...prevPhases_Gantt, ...data.defaultPhases_Gantt];
             if (socketRef.current) {
-              socketRef.current.emit("sync-phases", updated);
+              socketRef.current.emit("sync-Phases_Gantt", updated);
             }
             return updated;
           });
+        } else if (!data.success) {
+          alert(`Error al guardar proyecto: ${data.error || 'Error desconocido'}`);
+          setProjects_Gantt(prev);
         }
       })
-      .catch(err => console.error("Error al crear proyecto en DB:", err));
+      .catch(err => {
+        console.error("Error al crear proyecto en DB:", err);
+        alert("Error de red al guardar el proyecto. Verifica la conexión.");
+        setProjects_Gantt(prev);
+      });
     });
 
     const deleted = prev.filter(p => !next.some(n => n.id === p.id));
@@ -616,13 +644,13 @@ export default function Home() {
     });
   };
 
-  const handleSetMilestones = (newMilestones: Milestone[] | ((prev: Milestone[]) => Milestone[])) => {
-    const prev = milestones;
-    const next = typeof newMilestones === "function" ? newMilestones(prev) : newMilestones;
-    setMilestones(next);
+  const handleSetMilestones_Gantt = (newMilestones_Gantt: Milestone[] | ((prev: Milestone[]) => Milestone[])) => {
+    const prev = Milestones_Gantt;
+    const next = typeof newMilestones_Gantt === "function" ? newMilestones_Gantt(prev) : newMilestones_Gantt;
+    setMilestones_Gantt(next);
 
     if (socketRef.current) {
-      socketRef.current.emit("sync-milestones", next);
+      socketRef.current.emit("sync-Milestones_Gantt", next);
     }
 
     const added = next.filter(n => !prev.some(p => p.id === n.id));
@@ -654,12 +682,12 @@ export default function Home() {
   };
 
   const handleSetUsers = (newUsers: AuthUser[] | ((prev: AuthUser[]) => AuthUser[])) => {
-    const prev = users;
+    const prev = users_Gantt;
     const next = typeof newUsers === "function" ? newUsers(prev) : newUsers;
     setUsers(next);
 
     if (socketRef.current) {
-      socketRef.current.emit("sync-users", next);
+      socketRef.current.emit("sync-users_Gantt", next);
     }
 
     const added = next.filter(n => !prev.some(p => p.id === n.id));
@@ -703,13 +731,13 @@ export default function Home() {
     setUser(null);
   }
 
-  const userNotifications = notifications.filter((n) => n.userId === user?.id);
-  const unreadNotifications = userNotifications.filter((n) => !n.read);
+  const userNotifications_Gantt = Notifications_Gantt.filter((n) => n.userId === user?.id);
+  const unreadNotifications_Gantt = userNotifications_Gantt.filter((n) => !n.read);
 
   function handleMarkAllAsRead() {
-    const prev = notifications;
+    const prev = Notifications_Gantt;
     const updated = prev.map((n) => (n.userId === user?.id ? { ...n, read: true } : n));
-    setNotifications(updated);
+    setNotifications_Gantt(updated);
 
     if (user) {
       fetch('/api/notifications', {
@@ -719,28 +747,28 @@ export default function Home() {
       }).catch(err => console.error("Error al marcar notificaciones leídas:", err));
     }
     if (socketRef.current) {
-      socketRef.current.emit("sync-notifications", updated);
+      socketRef.current.emit("sync-Notifications_Gantt", updated);
     }
   }
 
-  function handleClearAllNotifications() {
-    const prev = notifications;
+  function handleClearAllNotifications_Gantt() {
+    const prev = Notifications_Gantt;
     const updated = prev.filter((n) => n.userId !== user?.id);
-    setNotifications(updated);
+    setNotifications_Gantt(updated);
 
     if (user) {
       fetch(`/api/notifications?userId=${user.id}`, { method: 'DELETE' })
         .catch(err => console.error("Error al limpiar notificaciones en DB:", err));
     }
     if (socketRef.current) {
-      socketRef.current.emit("sync-notifications", updated);
+      socketRef.current.emit("sync-Notifications_Gantt", updated);
     }
   }
 
   function handleNotificationClick(n: Notification) {
-    const prev = notifications;
+    const prev = Notifications_Gantt;
     const updated = prev.map((item) => (item.id === n.id ? { ...item, read: true } : item));
-    setNotifications(updated);
+    setNotifications_Gantt(updated);
 
     fetch('/api/notifications', {
       method: 'PUT',
@@ -749,10 +777,10 @@ export default function Home() {
     }).catch(err => console.error("Error al marcar notificación leída:", err));
 
     if (socketRef.current) {
-      socketRef.current.emit("sync-notifications", updated);
+      socketRef.current.emit("sync-Notifications_Gantt", updated);
     }
     
-    setShowNotifications(false);
+    setShowNotifications_Gantt(false);
 
     if (n.taskId) {
       const task = tasks.find((t) => t.id === n.taskId);
@@ -785,7 +813,7 @@ export default function Home() {
       status: "planning",
       leaderId: leaderId,
     };
-    handleSetProjects((prev) => [...prev, proj]);
+    handleSetProjects_Gantt((prev) => [...prev, proj]);
     setActiveProjectId(proj.id);
     setNewProj({ name: "", description: "", startDate: "", endDate: "" });
     setShowAddProject(false);
@@ -857,15 +885,15 @@ export default function Home() {
     );
   }
 
-  const activeProj = projects.find((p) => p.id === activeProjectId) || projects[0] || mockProjects[0];
+  const activeProj = Projects_Gantt.find((p) => p.id === activeProjectId) || Projects_Gantt[0] || mockProjects[0];
 
   const isPM = user?.role === "Project Manager";
   const projectTasks = tasks.filter((t) => t.projectId === activeProj.id);
-  const projectMilestones = milestones.filter((m) => m.projectId === activeProj.id);
-  let projectPhases = phases.filter((p) => p.projectId === activeProj.id || (!p.projectId && activeProj.id === "proj1"));
-  if (projectPhases.length === 0) {
+  const projectMilestones_Gantt = Milestones_Gantt.filter((m) => m.projectId === activeProj.id);
+  let projectPhases_Gantt = Phases_Gantt.filter((p) => p.projectId === activeProj.id || (!p.projectId && activeProj.id === "proj1"));
+  if (projectPhases_Gantt.length === 0) {
     if (activeProj.id === "proj1") {
-      projectPhases = [
+      projectPhases_Gantt = [
         { id: 'p1', name: 'Inicio y planificación', color: '#4f7cff', projectId: 'proj1' },
         { id: 'p2', name: 'Diseño y arquitectura', color: '#7c5cfc', projectId: 'proj1' },
         { id: 'p3', name: 'Desarrollo', color: '#3ecf8e', projectId: 'proj1' },
@@ -873,7 +901,7 @@ export default function Home() {
         { id: 'p5', name: 'Bloqueadas', color: '#ff5c5c', projectId: 'proj1' }
       ];
     } else {
-      projectPhases = [
+      projectPhases_Gantt = [
         { id: `${activeProj.id}_init`, name: 'Inicio y planificación', color: '#4f7cff', projectId: activeProj.id },
         { id: `${activeProj.id}_design`, name: 'Diseño y arquitectura', color: '#7c5cfc', projectId: activeProj.id },
         { id: `${activeProj.id}_dev`, name: 'Desarrollo', color: '#3ecf8e', projectId: activeProj.id },
@@ -911,7 +939,7 @@ export default function Home() {
             onChange={(e) => setActiveProjectId(e.target.value)}
             className="bg-transparent text-xs font-semibold text-[#e8eaf6] outline-none cursor-pointer pr-2"
           >
-            {projects.map((p) => (
+            {Projects_Gantt.map((p) => (
               <option key={p.id} value={p.id} className="bg-[#1a1d27]">
                 {p.name}
               </option>
@@ -958,47 +986,47 @@ export default function Home() {
           {/* Centro de Notificaciones */}
           <div className="relative">
             <button
-              onClick={() => setShowNotifications(!showNotifications)}
+              onClick={() => setShowNotifications_Gantt(!showNotifications_Gantt)}
               className="relative p-1.5 rounded-lg border border-[#2e3352] bg-[#1a1d27] text-[#8b93b8] hover:text-white hover:border-[#4f7cff] transition cursor-pointer flex items-center justify-center"
               title="Notificaciones"
             >
               <Bell size={15} />
-              {unreadNotifications.length > 0 && (
+              {unreadNotifications_Gantt.length > 0 && (
                 <span className="absolute -top-1 -right-1 w-4 h-4 bg-[#ff5c5c] text-white text-[8px] font-black rounded-full flex items-center justify-center border border-[#1a1d27]">
-                  {unreadNotifications.length}
+                  {unreadNotifications_Gantt.length}
                 </span>
               )}
             </button>
 
-            {showNotifications && (
+            {showNotifications_Gantt && (
               <>
-                <div className="fixed inset-0 z-40" onClick={() => setShowNotifications(false)} />
+                <div className="fixed inset-0 z-40" onClick={() => setShowNotifications_Gantt(false)} />
                 <div className="absolute right-0 mt-2 w-80 bg-[#1a1d27] border border-[#2e3352] rounded-xl shadow-2xl z-50 overflow-hidden flex flex-col max-h-[360px] animate-in fade-in slide-in-from-top-2 duration-150">
                   <div className="px-4 py-2.5 border-b border-[#2e3352] bg-[#151821] flex justify-between items-center">
                     <span className="text-xs font-bold text-white flex items-center gap-1.5">
                       <Bell size={13} className="text-[#4f7cff]" /> Notificaciones
                     </span>
                     <div className="flex gap-2 text-[9px] font-semibold">
-                      {unreadNotifications.length > 0 && (
+                      {unreadNotifications_Gantt.length > 0 && (
                         <button onClick={handleMarkAllAsRead} className="text-[#4f7cff] hover:underline cursor-pointer">
                           Marcar todo leido
                         </button>
                       )}
-                      {userNotifications.length > 0 && (
-                        <button onClick={handleClearAllNotifications} className="text-[#ff5c5c] hover:underline cursor-pointer">
+                      {userNotifications_Gantt.length > 0 && (
+                        <button onClick={handleClearAllNotifications_Gantt} className="text-[#ff5c5c] hover:underline cursor-pointer">
                           Limpiar todo
                         </button>
                       )}
                     </div>
                   </div>
                   <div className="overflow-y-auto flex-1 divide-y divide-[#2e3352]/40">
-                    {userNotifications.length === 0 ? (
+                    {userNotifications_Gantt.length === 0 ? (
                       <div className="flex flex-col items-center justify-center py-10 text-[#8b93b8]">
                         <Bell size={24} className="opacity-20 mb-1.5" />
                         <p className="text-[10px] font-medium">No tienes notificaciones</p>
                       </div>
                     ) : (
-                      userNotifications.map((n) => {
+                      userNotifications_Gantt.map((n) => {
                         const iconMap = {
                           comment: <MessageSquare size={13} className="text-[#4f7cff]" />,
                           assignment: <Briefcase size={13} className="text-[#3ecf8e]" />,
@@ -1062,80 +1090,80 @@ export default function Home() {
       <main className={`flex-1 overflow-hidden relative ${isOffline ? "pointer-events-none opacity-60" : ""}`}>
         {activeTab === "gantt"    && (
           <GanttView 
-            tasks={projectTasks} 
+            Tasks_Gantt={projectTasks} 
             setTasks={handleSetTasks} 
-            phases={projectPhases} 
-            setPhases={handleSetPhases} 
-            milestones={projectMilestones}
-            setMilestones={handleSetMilestones}
-            projects={[activeProj]}
-            setProjects={handleSetProjects}
-            users={users} 
+            Phases_Gantt={projectPhases_Gantt} 
+            setPhases_Gantt={handleSetPhases_Gantt} 
+            Milestones_Gantt={projectMilestones_Gantt}
+            setMilestones_Gantt={handleSetMilestones_Gantt}
+            Projects_Gantt={[activeProj]}
+            setProjects_Gantt={handleSetProjects_Gantt}
+            users_Gantt={users_Gantt} 
             openTaskId={openTaskId}
             onClearOpenTaskId={() => setOpenTaskId(null)}
           />
         )}
         {activeTab === "board"    && (
           <BoardView 
-            tasks={projectTasks} 
+            Tasks_Gantt={projectTasks} 
             setTasks={handleSetTasks} 
-            phases={projectPhases} 
-            milestones={projectMilestones}
-            users={users} 
+            Phases_Gantt={projectPhases_Gantt} 
+            Milestones_Gantt={projectMilestones_Gantt}
+            users_Gantt={users_Gantt} 
             activeProjectId={activeProj.id}
           />
         )}
         {activeTab === "calendar" && (
           <CalendarView 
-            tasks={projectTasks} 
+            Tasks_Gantt={projectTasks} 
             setTasks={handleSetTasks} 
-            phases={projectPhases} 
-            milestones={projectMilestones}
-            users={users} 
+            Phases_Gantt={projectPhases_Gantt} 
+            Milestones_Gantt={projectMilestones_Gantt}
+            users_Gantt={users_Gantt} 
             activeProjectId={activeProj.id}
           />
         )}
         {activeTab === "reports"  && (
           <ReportsView 
-            tasks={projectTasks} 
-            projects={projects} 
-            setProjects={handleSetProjects}
-            milestones={projectMilestones} 
-            users={users} 
+            Tasks_Gantt={projectTasks} 
+            Projects_Gantt={Projects_Gantt} 
+            setProjects_Gantt={handleSetProjects_Gantt}
+            Milestones_Gantt={projectMilestones_Gantt} 
+            users_Gantt={users_Gantt} 
             activeProjectId={activeProjectId}
           />
         )}
-        {activeTab === "users"    && (
+        {activeTab === "users_Gantt"    && (
           <UsersView 
-            tasks={tasks} 
-            users={users} 
+            Tasks_Gantt={Tasks_Gantt} 
+            users_Gantt={users_Gantt} 
             setUsers={handleSetUsers} 
             currentUser={user}
             setCurrentUser={setUser}
           />
         )}
-        {activeTab === "projects" && (
+        {activeTab === "Projects_Gantt" && (
           <ProjectsView
-            projects={projects}
-            setProjects={handleSetProjects}
-            tasks={tasks}
-            users={users}
+            Projects_Gantt={Projects_Gantt}
+            setProjects_Gantt={handleSetProjects_Gantt}
+            Tasks_Gantt={Tasks_Gantt}
+            users_Gantt={users_Gantt}
             currentUser={user}
             activeProjectId={activeProjectId}
             setActiveProjectId={setActiveProjectId}
             setActiveTab={setActiveTab}
           />
         )}
-        {activeTab === "notes" && (
+        {activeTab === "Notes_Gantt" && (
           <NotesView
-            users={users}
-            projects={projects}
+            users_Gantt={users_Gantt}
+            Projects_Gantt={Projects_Gantt}
             activeProjectId={activeProjectId}
           />
         )}
         {activeTab === "activity" && (
           <ActivityView
-            users={users}
+            users_Gantt={users_Gantt}
             currentUser={user}
           />
         )}

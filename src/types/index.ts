@@ -1,4 +1,4 @@
-export type TaskStatus = "open" | "in_progress" | "done" | "blocked" | "review";
+﻿export type TaskStatus = "open" | "in_progress" | "done" | "blocked" | "review";
 export type TaskPriority = "critica" | "alta" | "media" | "baja";
 export type UserRole = "Project Manager" | "Frontend Developer" | "Backend Developer" | "UX/UI Designer" | "DevOps Engineer" | "Systems Architect" | "QA Engineer" | "Analista" | "Observer";
 export type ContractType = "Por hora" | "Fijo" | "Freelance" | "Consultor";
@@ -65,7 +65,7 @@ export interface Task {
   riskFlag?: "en_riesgo" | "vencida" | null;
   assigneeId: string;
   assigneeIds?: string[];
-  notes?: string;
+  Notes_Gantt?: string;
   estimatedHours?: number;
   actualHours?: number;
   requiredSkills?: string[];
@@ -116,7 +116,7 @@ export interface Note {
   updatedAt: string;
 }
 
-export interface ActivityLog {
+export interface ActivityLog_Gantt {
   id: string;
   userId: string;
   userName: string;

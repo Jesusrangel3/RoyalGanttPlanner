@@ -1,13 +1,13 @@
-"use client";
+﻿"use client";
 
 import { useState, useEffect, useCallback } from "react";
 import { Plus, Pin, Trash2, Search, Tag, Globe, Lock, Edit3, X, Check } from "lucide-react";
 import { Note, AuthUser, Project } from "@/types";
 import { getSessionUser } from "@/lib/auth";
 
-interface NotesViewProps {
-  users: AuthUser[];
-  projects: Project[];
+interface Notes_GanttViewProps {
+  users_Gantt: AuthUser[];
+  Projects_Gantt: Project[];
   activeProjectId?: string;
 }
 
@@ -222,21 +222,21 @@ function NoteEditor({
   );
 }
 
-export default function NotesView({ users, projects, activeProjectId }: NotesViewProps) {
+export default function Notes_GanttView({ users_Gantt, Projects_Gantt, activeProjectId }: Notes_GanttViewProps) {
   const currentUser = getSessionUser();
-  const [notes, setNotes] = useState<Note[]>([]);
+  const [Notes_Gantt, setNotes_Gantt] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [editingNote, setEditingNote] = useState<Partial<Note> | null>(null);
   const [filterShared, setFilterShared] = useState<"all" | "mine" | "shared">("all");
 
-  const loadNotes = useCallback(async () => {
+  const loadNotes_Gantt = useCallback(async () => {
     try {
       setLoading(true);
-      const url = activeProjectId ? `/api/notes?projectId=${activeProjectId}` : '/api/notes';
+      const url = activeProjectId ? `/api/Notes_Gantt?projectId=${activeProjectId}` : '/api/notes';
       const res = await fetch(url);
       const data = await res.json();
-      if (data.success) setNotes(data.notes);
+      if (data.success) setNotes_Gantt(data.notes);
     } catch (err) {
       console.error("Error cargando notas:", err);
     } finally {
@@ -244,7 +244,7 @@ export default function NotesView({ users, projects, activeProjectId }: NotesVie
     }
   }, [activeProjectId]);
 
-  useEffect(() => { loadNotes(); }, [loadNotes]);
+  useEffect(() => { loadNotes_Gantt(); }, [loadNotes_Gantt]);
 
   async function handleSave(note: Partial<Note>) {
     try {
@@ -257,7 +257,7 @@ export default function NotesView({ users, projects, activeProjectId }: NotesVie
       });
       const data = await res.json();
       if (data.success) {
-        await loadNotes();
+        await loadNotes_Gantt();
         setEditingNote(null);
       }
     } catch (err) {
@@ -267,8 +267,8 @@ export default function NotesView({ users, projects, activeProjectId }: NotesVie
 
   async function handleDelete(id: string) {
     if (!confirm("¿Eliminar esta nota?")) return;
-    await fetch(`/api/notes?id=${id}`, { method: 'DELETE' });
-    setNotes((prev) => prev.filter((n) => n.id !== id));
+    await fetch(`/api/Notes_Gantt?id=${id}`, { method: 'DELETE' });
+    setNotes_Gantt((prev) => prev.filter((n) => n.id !== id));
   }
 
   async function handleTogglePin(note: Note) {
@@ -276,7 +276,7 @@ export default function NotesView({ users, projects, activeProjectId }: NotesVie
     await handleSave(updated);
   }
 
-  const filtered = notes.filter((n) => {
+  const filtered = Notes_Gantt.filter((n) => {
     const matchSearch =
       !search ||
       n.title.toLowerCase().includes(search.toLowerCase()) ||

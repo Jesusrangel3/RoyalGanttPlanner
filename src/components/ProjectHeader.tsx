@@ -1,25 +1,25 @@
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { Plus, Award, Calendar, AlertCircle, Trash2, CheckCircle2, Flag, Target } from "lucide-react";
 import { Project, Milestone, Task } from "@/types";
 
 interface ProjectHeaderProps {
-  projects: Project[];
-  setProjects: (p: Project[] | ((prev: Project[]) => Project[])) => void;
-  milestones: Milestone[];
-  setMilestones: (m: Milestone[] | ((prev: Milestone[]) => Milestone[])) => void;
-  tasks: Task[];
+  Projects_Gantt: Project[];
+  setProjects_Gantt: (p: Project[] | ((prev: Project[]) => Project[])) => void;
+  Milestones_Gantt: Milestone[];
+  setMilestones_Gantt: (m: Milestone[] | ((prev: Milestone[]) => Milestone[])) => void;
+  Tasks_Gantt: Task[];
 }
 
 export default function ProjectHeader({
-  projects,
-  setProjects,
-  milestones,
-  setMilestones,
-  tasks,
+  Projects_Gantt,
+  setProjects_Gantt,
+  Milestones_Gantt,
+  setMilestones_Gantt,
+  Tasks_Gantt,
 }: ProjectHeaderProps) {
-  const activeProj = projects[0] || {
+  const activeProj = Projects_Gantt[0] || {
     id: "proj1",
     name: "Royal Gantt Planner",
     description: "Gestión de proyectos con Gantt y recursos",
@@ -33,13 +33,13 @@ export default function ProjectHeader({
   const [newMS, setNewMS] = useState({ name: "", targetDate: "", description: "" });
 
   // Calcular progreso promedio dinámico de las tareas
-  const activeTasks = tasks.filter(t => t.projectId === activeProj.id || !t.projectId);
+  const activeTasks = Tasks_Gantt.filter(t => t.projectId === activeProj.id || !t.projectId);
   const avgProgress = activeTasks.length
     ? Math.round(activeTasks.reduce((sum, t) => sum + (t.progress || 0), 0) / activeTasks.length)
     : 0;
 
   // Filtrar metas de este proyecto
-  const projMilestones = milestones.filter(m => m.projectId === activeProj.id);
+  const projMilestones_Gantt = Milestones_Gantt.filter(m => m.projectId === activeProj.id);
 
   function handleAddMilestone() {
     if (!newMS.name.trim() || !newMS.targetDate) return;
@@ -51,22 +51,22 @@ export default function ProjectHeader({
       description: newMS.description.trim() || undefined,
       status: "pending",
     };
-    setMilestones(prev => [...prev, milestone]);
+    setMilestones_Gantt(prev => [...prev, milestone]);
     setNewMS({ name: "", targetDate: "", description: "" });
     setShowAddMilestone(false);
   }
 
   function handleRemoveMilestone(id: string) {
-    setMilestones(prev => prev.filter(m => m.id !== id));
+    setMilestones_Gantt(prev => prev.filter(m => m.id !== id));
   }
 
-  function toggleMilestoneStatus(id: string, current: Milestone["status"]) {
+  function toggleMilestones_Gantttatus(id: string, current: Milestone["status"]) {
     const nextStatusMap: Record<Milestone["status"], Milestone["status"]> = {
       pending: "achieved",
       achieved: "missed",
       missed: "pending",
     };
-    setMilestones(prev =>
+    setMilestones_Gantt(prev =>
       prev.map(m => (m.id === id ? { ...m, status: nextStatusMap[current] } : m))
     );
   }
@@ -122,12 +122,12 @@ export default function ProjectHeader({
         </div>
       </div>
 
-      {/* Sección de Metas / Milestones */}
+      {/* Sección de Metas / Milestones_Gantt */}
       <div className="border-t border-[#2e3352]/50 pt-3">
         <div className="flex items-center justify-between mb-2">
           <span className="text-[10px] font-bold text-[#8b93b8] uppercase tracking-wider flex items-center gap-1.5">
             <Flag size={12} className="text-[#3ecf8e]" />
-            Metas y Objetivos del Proyecto ({projMilestones.length})
+            Metas y Objetivos del Proyecto ({projMilestones_Gantt.length})
           </span>
           <button
             onClick={() => setShowAddMilestone(!showAddMilestone)}
@@ -186,10 +186,10 @@ export default function ProjectHeader({
 
         {/* Listado de Metas */}
         <div className="flex flex-wrap gap-2 max-h-24 overflow-y-auto pr-1">
-          {projMilestones.length === 0 ? (
+          {projMilestones_Gantt.length === 0 ? (
             <p className="text-[10px] text-[#8b93b8] italic">No hay metas definidas para este proyecto.</p>
           ) : (
-            projMilestones.map(ms => {
+            projMilestones_Gantt.map(ms => {
               const statusColor = {
                 pending: "bg-yellow-500/10 text-yellow-500 border-yellow-500/20",
                 achieved: "bg-[#3ecf8e]/10 text-[#3ecf8e] border-[#3ecf8e]/20",
@@ -206,7 +206,7 @@ export default function ProjectHeader({
                   className="flex items-center gap-2 px-2.5 py-1 bg-[#1e2230] border border-[#2e3352] rounded-lg group select-none hover:border-[#4f7cff]/40 transition"
                 >
                   <button
-                    onClick={() => toggleMilestoneStatus(ms.id, ms.status)}
+                    onClick={() => toggleMilestones_Gantttatus(ms.id, ms.status)}
                     title="Haga clic para cambiar estado"
                     className="focus:outline-none"
                   >

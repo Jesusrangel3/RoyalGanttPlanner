@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import { executeQuery, sql } from '@/lib/db';
 import { getAuthenticatedUser } from '@/lib/session';
 import { TimeEntry } from '@/types';
@@ -17,9 +17,9 @@ export async function GET(request: Request) {
     let query = `
       SELECT te.id, te.taskId, te.userId, te.hours, te.description, te.date, te.createdAt,
              u.name as userName, u.color as userColor, t.title as taskTitle
-      FROM TimeEntries te
-      JOIN Users u ON te.userId = u.id
-      JOIN Tasks t ON te.taskId = t.id
+      FROM TimeEntries_Gantt te
+      JOIN users_Gantt u ON te.userId = u.id
+      JOIN Tasks_Gantt t ON te.taskId = t.id
       WHERE 1=1
     `;
     const params: any = {};
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
     const id = 'te_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
 
     await executeQuery(`
-      INSERT INTO TimeEntries (id, taskId, userId, hours, description, date, createdAt)
+      INSERT INTO TimeEntries_Gantt (id, taskId, userId, hours, description, date, createdAt)
       VALUES (@id, @taskId, @userId, @hours, @description, @date, GETDATE())
     `, {
       id: { type: sql.NVarChar, value: id },
@@ -72,8 +72,8 @@ export async function POST(request: Request) {
 
     // Actualizar actualHours en la tarea
     await executeQuery(`
-      UPDATE Tasks
-      SET actualHours = (SELECT ISNULL(SUM(hours), 0) FROM TimeEntries WHERE taskId = @taskId)
+      UPDATE Tasks_Gantt
+      SET actualHours = (SELECT ISNULL(SUM(hours), 0) FROM TimeEntries_Gantt WHERE taskId = @taskId)
       WHERE id = @taskId
     `, { taskId: { type: sql.NVarChar, value: body.taskId } });
 
@@ -92,7 +92,7 @@ export async function DELETE(request: Request) {
   if (!id) return NextResponse.json({ success: false, error: 'ID requerido' }, { status: 400 });
 
   try {
-    const existing = await executeQuery('SELECT taskId FROM TimeEntries WHERE id = @id AND userId = @userId', {
+    const existing = await executeQuery('SELECT taskId FROM TimeEntries_Gantt WHERE id = @id AND userId = @userId', {
       id: { type: sql.NVarChar, value: id },
       userId: { type: sql.NVarChar, value: sessionUser.id },
     });
@@ -101,14 +101,14 @@ export async function DELETE(request: Request) {
     }
     const taskId = existing.recordset[0].taskId;
 
-    await executeQuery('DELETE FROM TimeEntries WHERE id = @id', {
+    await executeQuery('DELETE FROM TimeEntries_Gantt WHERE id = @id', {
       id: { type: sql.NVarChar, value: id },
     });
 
     // Recalcular actualHours
     await executeQuery(`
-      UPDATE Tasks
-      SET actualHours = (SELECT ISNULL(SUM(hours), 0) FROM TimeEntries WHERE taskId = @taskId)
+      UPDATE Tasks_Gantt
+      SET actualHours = (SELECT ISNULL(SUM(hours), 0) FROM TimeEntries_Gantt WHERE taskId = @taskId)
       WHERE id = @taskId
     `, { taskId: { type: sql.NVarChar, value: taskId } });
 

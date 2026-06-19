@@ -1,4 +1,4 @@
-/**
+﻿/**
  * Librería de validación para tareas, proyectos y recursos.
  * Proporciona funciones para validar integridad de datos y prevenir estados inválidos.
  */
@@ -181,7 +181,7 @@ export function canAssignUserToTask(
 /**
  * Calcula la carga de trabajo de un usuario en horas.
  */
-export function calculateUserWorkload(userId: string, tasks: Task[]): {
+export function calculateUserWorkload(userId: string, Tasks_Gantt: Task[]): {
   totalEstimatedHours: number;
   totalActualHours: number;
   incompleteTasks: number;
@@ -200,10 +200,10 @@ export function calculateUserWorkload(userId: string, tasks: Task[]): {
  */
 export function getUserWorkloadAlerts(
   user: AuthUser,
-  tasks: Task[]
+  Tasks_Gantt: Task[]
 ): string[] {
   const alerts: string[] = [];
-  const workload = calculateUserWorkload(user.id, tasks);
+  const workload = calculateUserWorkload(user.id, Tasks_Gantt);
   const availableHours = user.availableHours || 40;
 
   if (workload.totalEstimatedHours > availableHours) {

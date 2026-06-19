@@ -1,6 +1,33 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import { executeQuery, sql } from '@/lib/db';
 import { getAuthenticatedUser } from '@/lib/session';
+
+export const dynamic = 'force-dynamic';
+
+export async function GET(request: Request) {
+  const sessionUser = getAuthenticatedUser();
+  if (!sessionUser) return NextResponse.json({ success: false, error: 'No autorizado.' }, { status: 401 });
+
+  const { searchParams } = new URL(request.url);
+  const taskId = searchParams.get('taskId');
+  if (!taskId) return NextResponse.json({ success: false, error: 'Se requiere taskId.' }, { status: 400 });
+
+  try {
+    const result = await executeQuery(`
+      SELECT c.id, c.taskId, c.userId, u.name AS userName, u.color AS userColor, c.content, c.createdAt
+      FROM TaskComments_Gantt c JOIN users_Gantt u ON c.userId = u.id
+      WHERE c.taskId = @taskId ORDER BY c.createdAt ASC
+    `, { taskId: { type: sql.NVarChar, value: taskId } });
+
+    const comments = result.recordset.map(c => ({
+      ...c,
+      createdAt: new Date(c.createdAt).toLocaleString('es', { dateStyle: 'short', timeStyle: 'short' }),
+    }));
+    return NextResponse.json({ success: true, comments });
+  } catch (error: any) {
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+  }
+}
 
 export async function POST(request: Request) {
   try {
@@ -22,7 +49,7 @@ export async function POST(request: Request) {
 
     // 1. Insertar en la base de datos
     await executeQuery(`
-      INSERT INTO TaskComments (id, taskId, userId, content, createdAt)
+      INSERT INTO TaskComments_Gantt (id, taskId, userId, content, createdAt)
       VALUES (@id, @taskId, @userId, @content, GETDATE())
     `, {
       id: { type: sql.NVarChar, value: id },
@@ -32,7 +59,7 @@ export async function POST(request: Request) {
     });
 
     // 2. Recuperar detalles del usuario creador para responder con su nombre y color
-    const userResult = await executeQuery('SELECT name, color FROM Users WHERE id = @id', {
+    const userResult = await executeQuery('SELECT name, color FROM users_Gantt WHERE id = @id', {
       id: { type: sql.NVarChar, value: userId }
     });
     

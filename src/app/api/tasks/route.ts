@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import { executeQuery, sql, getDbPool } from '@/lib/db';
 import { Task } from '@/types';
 import { getAuthenticatedUser } from '@/lib/session';
@@ -13,8 +13,8 @@ export async function GET() {
       return NextResponse.json({ success: false, error: 'No autorizado. Por favor inicie sesión.' }, { status: 401 });
     }
 
-    const tasksResult = await executeQuery('SELECT * FROM Tasks ORDER BY boardOrder ASC');
-    const assigneesResult = await executeQuery('SELECT taskId, userId FROM TaskAssignees');
+    const tasksResult = await executeQuery('SELECT * FROM Tasks_Gantt ORDER BY boardOrder ASC');
+    const assigneesResult = await executeQuery('SELECT taskId, userId FROM TaskAssignees_Gantt');
     
     const assigneesMap: Record<string, string[]> = {};
     assigneesResult.recordset.forEach(a => {
@@ -84,11 +84,11 @@ export async function POST(request: Request) {
     requestTask.input('progress', sql.Int, task.progress || 0);
     requestTask.input('assigneeId', sql.NVarChar, task.assigneeId);
     requestTask.input('notes', sql.NVarChar, task.notes || null);
-    requestTask.input('estimatedHours', sql.Int, task.estimatedHours || null);
-    requestTask.input('actualHours', sql.Int, task.actualHours || null);
+    requestTask.input('estimatedHours', sql.Int, task.estimatedHours ?? null);
+    requestTask.input('actualHours', sql.Int, task.actualHours ?? 0);
     requestTask.input('requiredSkills', sql.NVarChar, JSON.stringify(task.requiredSkills || []));
-    requestTask.input('estimatedBudget', sql.Decimal(18, 2), task.estimatedBudget || null);
-    requestTask.input('actualCost', sql.Decimal(18, 2), task.actualCost || null);
+    requestTask.input('estimatedBudget', sql.Decimal(18, 2), task.estimatedBudget ?? null);
+    requestTask.input('actualCost', sql.Decimal(18, 2), task.actualCost ?? null);
     requestTask.input('materials', sql.NVarChar, JSON.stringify(task.materials || []));
     requestTask.input('dependsOnTaskId', sql.NVarChar, task.dependsOnTaskId || null);
     requestTask.input('createdBy', sql.NVarChar, sessionUser.id);
@@ -97,7 +97,7 @@ export async function POST(request: Request) {
     requestTask.input('priority', sql.NVarChar, (task as any).priority || 'media');
 
     await requestTask.query(`
-      INSERT INTO Tasks (
+      INSERT INTO Tasks_Gantt (
         id, title, phaseId, projectId, milestoneId, startDate, endDate, status, progress,
         assigneeId, notes, estimatedHours, actualHours, requiredSkills, estimatedBudget, actualCost, materials, dependsOnTaskId, createdBy, accepted, boardOrder, priority
       )
@@ -114,7 +114,7 @@ export async function POST(request: Request) {
       requestAssignee.input('taskId', sql.NVarChar, task.id);
       requestAssignee.input('userId', sql.NVarChar, uid);
       await requestAssignee.query(`
-        INSERT INTO TaskAssignees (taskId, userId)
+        INSERT INTO TaskAssignees_Gantt (taskId, userId)
         VALUES (@taskId, @userId)
       `);
     }
@@ -170,11 +170,11 @@ export async function PUT(request: Request) {
     requestTask.input('progress', sql.Int, task.progress || 0);
     requestTask.input('assigneeId', sql.NVarChar, task.assigneeId);
     requestTask.input('notes', sql.NVarChar, task.notes || null);
-    requestTask.input('estimatedHours', sql.Int, task.estimatedHours || null);
-    requestTask.input('actualHours', sql.Int, task.actualHours || null);
+    requestTask.input('estimatedHours', sql.Int, task.estimatedHours ?? null);
+    requestTask.input('actualHours', sql.Int, task.actualHours ?? 0);
     requestTask.input('requiredSkills', sql.NVarChar, JSON.stringify(task.requiredSkills || []));
-    requestTask.input('estimatedBudget', sql.Decimal(18, 2), task.estimatedBudget || null);
-    requestTask.input('actualCost', sql.Decimal(18, 2), task.actualCost || null);
+    requestTask.input('estimatedBudget', sql.Decimal(18, 2), task.estimatedBudget ?? null);
+    requestTask.input('actualCost', sql.Decimal(18, 2), task.actualCost ?? null);
     requestTask.input('materials', sql.NVarChar, JSON.stringify(task.materials || []));
     requestTask.input('dependsOnTaskId', sql.NVarChar, task.dependsOnTaskId || null);
     requestTask.input('updatedAt', sql.DateTime2, new Date());
@@ -183,7 +183,7 @@ export async function PUT(request: Request) {
     requestTask.input('priority', sql.NVarChar, (task as any).priority || 'media');
 
     await requestTask.query(`
-      UPDATE Tasks
+      UPDATE Tasks_Gantt
       SET title = @title, phaseId = @phaseId, projectId = @projectId, milestoneId = @milestoneId,
           startDate = @startDate, endDate = @endDate, status = @status, progress = @progress,
           assigneeId = @assigneeId, notes = @notes, estimatedHours = @estimatedHours, actualHours = @actualHours,
@@ -196,7 +196,7 @@ export async function PUT(request: Request) {
     // 3. Limpiar asignaciones viejas y guardar las nuevas
     const requestClean = new sql.Request(transaction);
     requestClean.input('taskId', sql.NVarChar, task.id);
-    await requestClean.query('DELETE FROM TaskAssignees WHERE taskId = @taskId');
+    await requestClean.query('DELETE FROM TaskAssignees_Gantt WHERE taskId = @taskId');
 
     const assigneeIds = task.assigneeIds && task.assigneeIds.length > 0 ? task.assigneeIds : [task.assigneeId];
     for (const uid of assigneeIds) {
@@ -204,7 +204,7 @@ export async function PUT(request: Request) {
       requestAssignee.input('taskId', sql.NVarChar, task.id);
       requestAssignee.input('userId', sql.NVarChar, uid);
       await requestAssignee.query(`
-        INSERT INTO TaskAssignees (taskId, userId)
+        INSERT INTO TaskAssignees_Gantt (taskId, userId)
         VALUES (@taskId, @userId)
       `);
     }
@@ -233,7 +233,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ success: false, error: 'Se requiere el parámetro ID para eliminar.' }, { status: 400 });
     }
 
-    await executeQuery('DELETE FROM Tasks WHERE id = @id', {
+    await executeQuery('DELETE FROM Tasks_Gantt WHERE id = @id', {
       id: { type: sql.NVarChar, value: id }
     });
 

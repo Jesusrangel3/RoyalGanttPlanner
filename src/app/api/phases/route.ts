@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import { executeQuery, sql } from '@/lib/db';
 import { Phase } from '@/types';
 import { getAuthenticatedUser } from '@/lib/session';
@@ -13,8 +13,8 @@ export async function GET() {
       return NextResponse.json({ success: false, error: 'No autorizado. Por favor inicie sesión.' }, { status: 401 });
     }
 
-    const result = await executeQuery('SELECT id, name, color, projectId FROM Phases');
-    return NextResponse.json({ success: true, phases: result.recordset });
+    const result = await executeQuery('SELECT id, name, color, projectId FROM Phases_Gantt');
+    return NextResponse.json({ success: true, Phases_Gantt: result.recordset });
   } catch (error: any) {
     console.error('Error al obtener fases:', error);
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
     }
 
     await executeQuery(`
-      INSERT INTO Phases (id, name, color, projectId)
+      INSERT INTO Phases_Gantt (id, name, color, projectId)
       VALUES (@id, @name, @color, @projectId)
     `, {
       id: { type: sql.NVarChar, value: id },
@@ -75,7 +75,7 @@ export async function PUT(request: Request) {
     }
 
     await executeQuery(`
-      UPDATE Phases
+      UPDATE Phases_Gantt
       SET name = @name, color = @color, projectId = @projectId
       WHERE id = @id
     `, {
@@ -110,7 +110,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ success: false, error: 'Se requiere el parámetro ID para eliminar.' }, { status: 400 });
     }
 
-    await executeQuery('DELETE FROM Phases WHERE id = @id', {
+    await executeQuery('DELETE FROM Phases_Gantt WHERE id = @id', {
       id: { type: sql.NVarChar, value: id }
     });
 

@@ -1,11 +1,23 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import { executeQuery, sql } from '@/lib/db';
 import bcrypt from 'bcryptjs';
 import { cookies } from 'next/headers';
 import { signToken } from '@/lib/session';
+import { checkRateLimit } from '@/lib/rateLimit';
+import { logger } from '@/lib/logger';
 
 export async function POST(request: Request) {
   try {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] ?? '127.0.0.1';
+    const { ok, retryAfter } = checkRateLimit(`login:${ip}`, 20);
+    if (!ok) {
+      logger.warn('Rate limit excedido en login', { ip });
+      return NextResponse.json(
+        { success: false, error: 'Demasiados intentos de inicio de sesión. Intente de nuevo en un minuto.' },
+        { status: 429, headers: { 'Retry-After': String(retryAfter) } }
+      );
+    }
+
     const body = await request.json();
     const { email, password } = body;
 
@@ -22,7 +34,7 @@ export async function POST(request: Request) {
     // Buscar el usuario en la base de datos
     const result = await executeQuery(
       `SELECT id, name, email, initials, color, role, contractType, status, imageUrl, password, availableHours, skills, mustChangePassword, loginAttempts, lockoutUntil 
-       FROM Users 
+       FROM users_Gantt 
        WHERE email = @email`,
       { email: { type: sql.NVarChar, value: normalizedEmail } }
     );
@@ -71,7 +83,7 @@ export async function POST(request: Request) {
       }
       
       await executeQuery(
-        `UPDATE Users 
+        `UPDATE users_Gantt 
          SET loginAttempts = @attempts, 
              lockoutUntil = @lockoutUntil 
          WHERE id = @id`,
@@ -88,7 +100,7 @@ export async function POST(request: Request) {
     // Restablecer intentos fallidos al iniciar sesión con éxito
     if (dbUser.loginAttempts > 0 || dbUser.lockoutUntil) {
       await executeQuery(
-        `UPDATE Users 
+        `UPDATE users_Gantt 
          SET loginAttempts = 0, 
              lockoutUntil = NULL 
          WHERE id = @id`,

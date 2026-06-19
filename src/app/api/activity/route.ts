@@ -1,7 +1,7 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import { executeQuery, sql } from '@/lib/db';
 import { getAuthenticatedUser } from '@/lib/session';
-import { ActivityLog } from '@/types';
+import { ActivityLog_Gantt } from '@/types';
 
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +15,7 @@ export async function GET(request: Request) {
   const limit = parseInt(searchParams.get('limit') || '100');
 
   try {
-    let query = 'SELECT TOP (@limit) id, userId, userName, action, entityType, entityId, entityTitle, details, createdAt FROM ActivityLog';
+    let query = 'SELECT TOP (@limit) id, userId, userName, action, entityType, entityId, entityTitle, details, createdAt FROM ActivityLog_Gantt';
     const params: any = { limit: { type: sql.Int, value: limit } };
     const conditions: string[] = [];
 
@@ -31,7 +31,7 @@ export async function GET(request: Request) {
     query += ' ORDER BY createdAt DESC';
 
     const result = await executeQuery(query, params);
-    const logs: ActivityLog[] = result.recordset.map(r => ({
+    const logs: ActivityLog_Gantt[] = result.recordset.map(r => ({
       ...r,
       createdAt: new Date(r.createdAt).toLocaleString('es', { dateStyle: 'short', timeStyle: 'short' }),
     }));
@@ -47,14 +47,14 @@ export async function POST(request: Request) {
   if (!sessionUser) return NextResponse.json({ success: false, error: 'No autorizado' }, { status: 401 });
 
   try {
-    const body = await request.json() as Partial<ActivityLog>;
+    const body = await request.json() as Partial<ActivityLog_Gantt>;
     const id = 'log_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
 
-    const userRes = await executeQuery('SELECT name FROM Users WHERE id = @uid', { uid: { type: sql.NVarChar, value: sessionUser.id } });
+    const userRes = await executeQuery('SELECT name FROM users_Gantt WHERE id = @uid', { uid: { type: sql.NVarChar, value: sessionUser.id } });
     const userName = userRes.recordset[0]?.name || sessionUser.email;
 
     await executeQuery(`
-      INSERT INTO ActivityLog (id, userId, userName, action, entityType, entityId, entityTitle, details, createdAt)
+      INSERT INTO ActivityLog_Gantt (id, userId, userName, action, entityType, entityId, entityTitle, details, createdAt)
       VALUES (@id, @userId, @userName, @action, @entityType, @entityId, @entityTitle, @details, GETDATE())
     `, {
       id: { type: sql.NVarChar, value: id },

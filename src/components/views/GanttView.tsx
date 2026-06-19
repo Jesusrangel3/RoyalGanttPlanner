@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import { Plus, Download, RotateCcw, ChevronRight, AlertTriangle } from "lucide-react";
@@ -58,8 +58,8 @@ function addScaleUnits(dateStr: string, delta: number, viewMode: ViewMode): stri
 }
 
 // ── Avatar ──────────────────────────────────────────
-function Avatar({ userId, size = 24, users }: { userId: string; size?: number; users: AuthUser[] }) {
-  const user = users.find((u) => u.id === userId);
+function Avatar({ userId, size = 24, users_Gantt }: { userId: string; size?: number; users_Gantt: AuthUser[] }) {
+  const user = users_Gantt.find((u) => u.id === userId);
   if (!user) return null;
   if (user.imageUrl) {
     return (
@@ -109,29 +109,29 @@ function ConfirmDialog({ message, onConfirm, onCancel }: { message: string; onCo
 
 // ── Componente GanttView Principal ──
 interface GanttViewProps {
-  tasks: Task[];
-  setTasks: (tasks: Task[] | ((prev: Task[]) => Task[])) => void;
-  phases: Phase[];
-  setPhases: (phases: Phase[] | ((prev: Phase[]) => Phase[])) => void;
-  milestones: Milestone[];
-  setMilestones: (milestones: Milestone[] | ((prev: Milestone[]) => Milestone[])) => void;
-  projects: Project[];
-  setProjects: (projects: Project[] | ((prev: Project[]) => Project[])) => void;
-  users: AuthUser[];
+  Tasks_Gantt: Task[];
+  setTasks: (Tasks_Gantt: Task[] | ((prev: Task[]) => Task[])) => void;
+  Phases_Gantt: Phase[];
+  setPhases_Gantt: (Phases_Gantt: Phase[] | ((prev: Phase[]) => Phase[])) => void;
+  Milestones_Gantt: Milestone[];
+  setMilestones_Gantt: (Milestones_Gantt: Milestone[] | ((prev: Milestone[]) => Milestone[])) => void;
+  Projects_Gantt: Project[];
+  setProjects_Gantt: (Projects_Gantt: Project[] | ((prev: Project[]) => Project[])) => void;
+  users_Gantt: AuthUser[];
   openTaskId?: string | null;
   onClearOpenTaskId?: () => void;
 }
 
 export default function GanttView({
-  tasks,
+  Tasks_Gantt,
   setTasks,
-  phases,
-  setPhases,
-  milestones,
-  setMilestones,
-  projects,
-  setProjects,
-  users,
+  Phases_Gantt,
+  setPhases_Gantt,
+  Milestones_Gantt,
+  setMilestones_Gantt,
+  Projects_Gantt,
+  setProjects_Gantt,
+  users_Gantt,
   openTaskId,
   onClearOpenTaskId,
 }: GanttViewProps) {
@@ -177,13 +177,13 @@ export default function GanttView({
 
   useEffect(() => {
     if (openTaskId) {
-      const task = tasks.find((t) => t.id === openTaskId);
+      const task = Tasks_Gantt.find((t) => t.id === openTaskId);
       if (task) {
         setModalTask(task);
       }
       onClearOpenTaskId?.();
     }
-  }, [openTaskId, tasks, onClearOpenTaskId]);
+  }, [openTaskId, Tasks_Gantt, onClearOpenTaskId]);
 
   // Dynamic parameters based on viewMode
   let days: Date[] = [];
@@ -219,7 +219,7 @@ export default function GanttView({
 
       if (deltaCols === 0) return;
 
-      const task = tasks.find((t) => t.id === resizing.taskId);
+      const task = Tasks_Gantt.find((t) => t.id === resizing.taskId);
       if (!task) return;
 
       if (resizing.side === "left") {
@@ -250,9 +250,9 @@ export default function GanttView({
       window.removeEventListener("mousemove", handleMouseMove);
       window.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [resizing, colWidth, viewMode, tasks, setTasks]);
+  }, [resizing, colWidth, viewMode, Tasks_Gantt, setTasks]);
 
-  const filteredTasks = tasks.filter((t) => {
+  const filteredTasks = Tasks_Gantt.filter((t) => {
     if (filterStatus && t.status !== filterStatus) return false;
     if (filterMember && !(t.assigneeIds?.includes(filterMember) || t.assigneeId === filterMember)) return false;
     if (filterPriority && (t as any).priority !== filterPriority) return false;
@@ -263,7 +263,7 @@ export default function GanttView({
   let currentPos = 0;
   const taskRowPositions: Record<string, number> = {};
 
-  phases.forEach((phase) => {
+  Phases_Gantt.forEach((phase) => {
     const pTasks = filteredTasks.filter((t) => t.phaseId === phase.id);
     
     currentPos++; // Cabecera de la fase
@@ -331,11 +331,11 @@ export default function GanttView({
     dragRef.current = null;
   }, [days, setTasks, viewMode, colWidth]);
 
-  const done = tasks.filter((t) => t.status === "done").length;
-  const inProg = tasks.filter((t) => t.status === "in_progress").length;
-  const review = tasks.filter((t) => t.status === "review").length;
-  const blocked = tasks.filter((t) => t.status === "blocked").length;
-  const globalProgress = tasks.length ? Math.round(tasks.reduce((a, t) => a + (t.progress || 0), 0) / tasks.length) : 0;
+  const done = Tasks_Gantt.filter((t) => t.status === "done").length;
+  const inProg = Tasks_Gantt.filter((t) => t.status === "in_progress").length;
+  const review = Tasks_Gantt.filter((t) => t.status === "review").length;
+  const blocked = Tasks_Gantt.filter((t) => t.status === "blocked").length;
+  const globalProgress = Tasks_Gantt.length ? Math.round(Tasks_Gantt.reduce((a, t) => a + (t.progress || 0), 0) / Tasks_Gantt.length) : 0;
 
   const headerGroups: { label: string; count: number }[] = [];
   days.forEach((d) => {
@@ -387,7 +387,7 @@ export default function GanttView({
        {/* Toolbar */}
       <div className="flex items-center gap-3 px-4 py-2 bg-[#1a1d27] border-b border-[#2e3352] flex-shrink-0 flex-wrap">
         {isPM && (
-          <button className={BTN_PRIMARY + " flex items-center gap-1"} onClick={() => setModalTask({ projectId: projects[0]?.id })}>
+          <button className={BTN_PRIMARY + " flex items-center gap-1"} onClick={() => setModalTask({ projectId: Projects_Gantt[0]?.id })}>
             <Plus size={13} /> Nueva tarea
           </button>
         )}
@@ -395,7 +395,7 @@ export default function GanttView({
           <span className="text-[11px] text-[#8b93b8]">Filtrar:</span>
           <select className={INPUT + " !w-auto"} value={filterMember} onChange={(e) => setFilterMember(e.target.value)}>
             <option value="">Todos los recursos</option>
-            {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+            {users_Gantt.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
           </select>
           <select className={INPUT + " !w-auto"} value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)}>
             <option value="">Todos los estados</option>
@@ -421,7 +421,7 @@ export default function GanttView({
         </div>
         <div className="ml-auto flex gap-2">
           <button className={BTN + " flex items-center gap-1"} onClick={() => {
-            const b = new Blob([JSON.stringify({ tasks, phases, milestones, projects }, null, 2)], { type: "application/json" });
+            const b = new Blob([JSON.stringify({ Tasks_Gantt, Phases_Gantt, Milestones_Gantt, Projects_Gantt }, null, 2)], { type: "application/json" });
             const a = document.createElement("a");
             a.href = URL.createObjectURL(b);
             a.download = "royal-gantt-backup.json";
@@ -442,7 +442,7 @@ export default function GanttView({
           </div>
           <div className="bg-[#1a1d27] border-b border-[#2e3352] flex-shrink-0" style={{ height: 23 }} />
           <div ref={leftScrollRef} onScroll={handleLeftScroll} className="overflow-y-auto flex-1 no-scrollbar" style={{ scrollbarWidth: "none" }}>
-            {phases.map((phase) => {
+            {Phases_Gantt.map((phase) => {
               const pTasks = filteredTasks.filter((t) => t.phaseId === phase.id);
               return (
                 <div key={phase.id}>
@@ -452,7 +452,7 @@ export default function GanttView({
                     <span className="text-xs font-semibold flex-1 truncate" style={{ color: phase.color }}>{phase.name}</span>
                     {isPM && (
                       <button 
-                        onClick={() => setModalTask({ phaseId: phase.id, projectId: projects[0]?.id })}
+                        onClick={() => setModalTask({ phaseId: phase.id, projectId: Projects_Gantt[0]?.id })}
                         className="opacity-0 group-hover:opacity-100 text-[#4f7cff] hover:bg-[#4f7cff]/10 rounded p-1 transition-all cursor-pointer flex items-center justify-center"
                         title={`Añadir tarea a ${phase.name}`}
                       >
@@ -489,7 +489,7 @@ export default function GanttView({
                       )}
                       <div className="flex -space-x-1.5 overflow-hidden">
                         {(task.assigneeIds && task.assigneeIds.length > 0 ? task.assigneeIds : [task.assigneeId]).map((uid) => (
-                          <Avatar key={uid} userId={uid} size={22} users={users} />
+                          <Avatar key={uid} userId={uid} size={22} users_Gantt={users_Gantt} />
                         ))}
                       </div>
                       {isPM && (
@@ -530,7 +530,7 @@ export default function GanttView({
               </defs>
               {filteredTasks.map((t) => {
                 if (!t.dependsOnTaskId) return null;
-                const parent = tasks.find((p) => p.id === t.dependsOnTaskId);
+                const parent = Tasks_Gantt.find((p) => p.id === t.dependsOnTaskId);
                 if (!parent) return null;
 
                 const r1 = taskRowPositions[parent.id];
@@ -586,8 +586,8 @@ export default function GanttView({
               {days.map((d, i) => {
                 const dayStr = d.toISOString().split("T")[0];
                 
-                // Active Milestones for this column bucket
-                const activeMilestones = milestones.filter(m => {
+                // Active Milestones_Gantt for this column bucket
+                const activeMilestones_Gantt = Milestones_Gantt.filter(m => {
                   const target = parseDate(m.targetDate);
                   if (viewMode === "month") {
                     return m.targetDate === dayStr;
@@ -636,14 +636,14 @@ export default function GanttView({
                     style={{ width: colWidth, height: 22 }}
                   >
                     <span>{label}</span>
-                    {activeMilestones.length > 0 && (
+                    {activeMilestones_Gantt.length > 0 && (
                       <div
                         className="absolute bottom-0 w-2 h-2 rotate-45 border border-white z-20 cursor-pointer shadow-md"
                         style={{
-                          background: activeMilestones[0].status === "achieved" ? "#3ecf8e" : activeMilestones[0].status === "missed" ? "#ff5c5c" : "#f5a623",
+                          background: activeMilestones_Gantt[0].status === "achieved" ? "#3ecf8e" : activeMilestones_Gantt[0].status === "missed" ? "#ff5c5c" : "#f5a623",
                           marginBottom: "-4px"
                         }}
-                        title={`Hito de Proyecto: ${activeMilestones.map(m => m.name).join(", ")}`}
+                        title={`Hito de Proyecto: ${activeMilestones_Gantt.map(m => m.name).join(", ")}`}
                       />
                     )}
                   </div>
@@ -652,14 +652,14 @@ export default function GanttView({
             </div>
 
             {/* Gantt rows */}
-            {phases.map((phase) => {
+            {Phases_Gantt.map((phase) => {
               const pTasks = filteredTasks.filter((t) => t.phaseId === phase.id);
               return (
                 <div key={phase.id}>
                   {/* Fila vacía para la cabecera de la fase */}
                   <div className="flex bg-[#22263a] border-b border-[#2e3352] relative" style={{ height: ROW_H, width: totalW }}>
                     {days.map((d, i) => {
-                      const hasMilestone = milestones.some(m => {
+                      const hasMilestone = Milestones_Gantt.some(m => {
                         const target = parseDate(m.targetDate);
                         if (viewMode === "month") {
                           return m.targetDate === d.toISOString().split("T")[0];
@@ -698,7 +698,7 @@ export default function GanttView({
                         onDragOver={(e) => e.preventDefault()}
                         onDrop={(e) => handleBarDrop(e, task.id)}>
                         {days.map((d, i) => {
-                          const hasMilestone = milestones.some(m => {
+                          const hasMilestone = Milestones_Gantt.some(m => {
                             const target = parseDate(m.targetDate);
                             if (viewMode === "month") {
                               return m.targetDate === d.toISOString().split("T")[0];
@@ -807,7 +807,7 @@ export default function GanttView({
 
       {/* Stats bar */}
       <div className="flex items-center gap-6 px-4 py-2 bg-[#1a1d27] border-t border-[#2e3352] flex-shrink-0 text-xs">
-        <Stat label="Tareas" value={tasks.length} active={filterStatus === ""} onClick={() => setFilterStatus("")} />
+        <Stat label="Tareas" value={Tasks_Gantt.length} active={filterStatus === ""} onClick={() => setFilterStatus("")} />
         <Stat label="En desarrollo" value={inProg} color="#4f7cff" active={filterStatus === "in_progress"} onClick={() => setFilterStatus(filterStatus === "in_progress" ? "" : "in_progress")} />
         <Stat label="En revisión" value={review} color="#f5a623" active={filterStatus === "review"} onClick={() => setFilterStatus(filterStatus === "review" ? "" : "review")} />
         <Stat label="Bloqueadas" value={blocked} color="#ff5c5c" active={filterStatus === "blocked"} onClick={() => setFilterStatus(filterStatus === "blocked" ? "" : "blocked")} />
@@ -822,10 +822,10 @@ export default function GanttView({
       {modalTask !== false && (
         <TaskModal
           task={modalTask}
-          users={users}
-          milestones={milestones}
-          tasks={tasks}
-          phases={phases}
+          users_Gantt={users_Gantt}
+          Milestones_Gantt={Milestones_Gantt}
+          Tasks_Gantt={Tasks_Gantt}
+          Phases_Gantt={Phases_Gantt}
           onClose={() => setModalTask(false)}
           onSave={saveTask}
           onDelete={(id) => setConfirm({ id, label: `la tarea seleccionada` })}

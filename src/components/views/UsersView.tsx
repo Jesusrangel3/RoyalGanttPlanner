@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { Search, UserPlus, ChevronDown, AlertTriangle, Camera } from "lucide-react";
@@ -33,16 +33,16 @@ const ROLE_OPTIONS = [
 const CONTRACT_OPTIONS = ["Por hora", "Fijo", "Freelance", "Consultor"];
 
 interface UsersViewProps {
-  tasks: any[];
-  users: AuthUser[];
-  setUsers: (users: AuthUser[] | ((prev: AuthUser[]) => AuthUser[])) => void;
+  Tasks_Gantt: any[];
+  users_Gantt: AuthUser[];
+  setUsers: (users_Gantt: AuthUser[] | ((prev: AuthUser[]) => AuthUser[])) => void;
   currentUser: AuthUser | null;
   setCurrentUser: (u: AuthUser | null) => void;
 }
 
 export default function UsersView({ 
-  tasks, 
-  users, 
+  Tasks_Gantt, 
+  users_Gantt, 
   setUsers,
   currentUser,
   setCurrentUser
@@ -73,22 +73,22 @@ export default function UsersView({
 
   const isPM = currentUser?.role === "Project Manager";
 
-  const filtered = users.filter((u) => {
+  const filtered = users_Gantt.filter((u) => {
     if (u.status === "pending" && !isPM) return false;
     return u.name.toLowerCase().includes(search.toLowerCase()) ||
            u.email.toLowerCase().includes(search.toLowerCase());
   });
 
   function getTaskCount(userId: string) {
-    return tasks.filter((t) => (t.assigneeIds && t.assigneeIds.includes(userId)) || t.assigneeId === userId).length;
+    return Tasks_Gantt.filter((t) => (t.assigneeIds && t.assigneeIds.includes(userId)) || t.assigneeId === userId).length;
   }
 
   function getCompletedCount(userId: string) {
-    return tasks.filter((t) => ((t.assigneeIds && t.assigneeIds.includes(userId)) || t.assigneeId === userId) && t.status === "done").length;
+    return Tasks_Gantt.filter((t) => ((t.assigneeIds && t.assigneeIds.includes(userId)) || t.assigneeId === userId) && t.status === "done").length;
   }
 
   function getUserWorkload(userId: string, availableHours: number) {
-    const activeTasks = tasks.filter((t) => ((t.assigneeIds && t.assigneeIds.includes(userId)) || t.assigneeId === userId) && t.status !== "done");
+    const activeTasks = Tasks_Gantt.filter((t) => ((t.assigneeIds && t.assigneeIds.includes(userId)) || t.assigneeId === userId) && t.status !== "done");
     const estimated = activeTasks.reduce((sum, t) => sum + (t.estimatedHours || 0), 0);
     return {
       estimated,
@@ -155,7 +155,7 @@ export default function UsersView({
   async function removeUser(id: string) {
     if (!confirm("¿Eliminar este usuario del sistema?")) return;
     try {
-      await fetch(`/api/users?id=${id}`, { method: 'DELETE' });
+      await fetch(`/api/users_Gantt?id=${id}`, { method: 'DELETE' });
     } catch { /* fallback */ }
     setUsers((prev) => prev.filter((u) => u.id !== id));
     setEditUser(null);
@@ -191,14 +191,14 @@ export default function UsersView({
       </div>
 
       {/* Aprobaciones Pendientes para el PM */}
-      {isPM && users.filter(u => u.status === "pending").length > 0 && (
+      {isPM && users_Gantt.filter(u => u.status === "pending").length > 0 && (
         <div className="bg-[#1e2230] border border-yellow-500/20 rounded-xl p-4 m-4 mb-2 flex-shrink-0">
           <h3 className="text-xs font-bold text-yellow-500 uppercase tracking-wider mb-2 flex items-center gap-1.5">
             <AlertTriangle size={14} className="text-yellow-500" />
-            Aprobaciones Pendientes ({users.filter(u => u.status === "pending").length})
+            Aprobaciones Pendientes ({users_Gantt.filter(u => u.status === "pending").length})
           </h3>
           <div className="space-y-2">
-            {users.filter(u => u.status === "pending").map((u) => (
+            {users_Gantt.filter(u => u.status === "pending").map((u) => (
               <div key={u.id} className="flex items-center justify-between bg-[#11151f] border border-[#2e3352] rounded-lg p-2.5">
                 <div className="flex items-center gap-2.5">
                   <Avatar user={u} size={28} />
@@ -216,7 +216,7 @@ export default function UsersView({
                   </button>
                   <button
                     onClick={() => {
-                      const nextUsers = users.map(x => x.id === u.id ? { ...x, status: "active" as const } : x);
+                      const nextUsers = users_Gantt.map(x => x.id === u.id ? { ...x, status: "active" as const } : x);
                       setUsers(nextUsers);
                     }}
                     className="px-2.5 py-1 bg-[#3ecf8e]/10 hover:bg-[#3ecf8e]/20 text-[#3ecf8e] rounded text-[10px] font-semibold border border-[#3ecf8e]/20 transition cursor-pointer"
@@ -295,7 +295,7 @@ export default function UsersView({
                 {user.availableHours || 40} h/semana
               </div>
 
-              {/* Tasks & Workload */}
+              {/* Tasks_Gantt & Workload */}
               <div className="flex flex-col">
                 <div className="flex items-center gap-1.5 text-xs text-[#8b93b8]">
                   <span>{getTaskCount(user.id)} tareas</span>
