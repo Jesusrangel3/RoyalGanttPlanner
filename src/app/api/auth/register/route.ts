@@ -57,7 +57,7 @@ export async function POST(request: Request) {
     const isPM = sessionUser?.role === 'Project Manager';
 
     const userId = id || `u${Date.now()}`;
-    const status = (normalizedEmail === 'renerangel@royaltransports.com.mx' || isPM) ? 'active' : 'pending';
+    const status = (normalizedEmail === 'renedejesusrangel228@gmail.com' || isPM) ? 'active' : 'pending';
 
     await executeQuery(`
       INSERT INTO users_Gantt (id, name, email, initials, color, role, contractType, status, password, imageUrl, availableHours, totalAssignedHours, skills)

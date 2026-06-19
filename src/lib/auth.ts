@@ -1,4 +1,4 @@
-import { User } from "@/types";
+﻿import { User } from "@/types";
 import { hashPassword } from "@/lib/utils";
 
 /**
@@ -9,7 +9,7 @@ export type AuthUser = User & {
 };
 
 const STORAGE_SESSION_KEY = "ganttpro-auth-session";
-const INSTITUTIONAL_DOMAIN = "royaltransports.com.mx";
+const INSTITUTIONAL_DOMAIN = "gmail.com";
 
 // ── Validación de Entrada ────────────────────────────
 

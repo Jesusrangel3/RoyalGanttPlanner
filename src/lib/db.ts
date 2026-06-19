@@ -49,8 +49,8 @@ export async function seedDatabase(pool: sql.ConnectionPool) {
       const serverHash = await bcrypt.hash(clientHash, 10);
 
       let email = user.email.trim().toLowerCase();
-      if (!email.endsWith('@royaltransports.com.mx')) {
-        email = email.split('@')[0] + '@royaltransports.com.mx';
+      if (!email.endsWith('@gmail.com')) {
+        email = email.split('@')[0] + '@gmail.com';
       }
 
       await pool.request()
@@ -71,7 +71,7 @@ export async function seedDatabase(pool: sql.ConnectionPool) {
     }
 
     // Asegurarse de que el usuario René Rangel exista como administrador/líder principal
-    const reneEmail = 'renerangel@royaltransports.com.mx';
+    const reneEmail = 'renedejesusrangel228@gmail.com';
     const reneCheck = await pool.request()
       .input('email', sql.NVarChar, reneEmail)
       .query('SELECT COUNT(*) as count FROM users_Gantt WHERE email = @email');
@@ -331,16 +331,34 @@ async function runMigrations(pool: sql.ConnectionPool) {
     AND EXISTS (SELECT 1 FROM Projects_Gantt WHERE id='proj1')
     INSERT INTO Phases_Gantt (id,name,color,projectId) VALUES ('p5','Bloqueadas','#ff5c5c','proj1');`);
 
+  // ── Migrar emails viejos de royaltransports.com.mx a gmail.com ────────────
+  await step('migrate.email.rene', `
+    UPDATE users_Gantt SET email='renedejesusrangel228@gmail.com'
+    WHERE email='renerangel@royaltransports.com.mx';
+  `);
+  await step('migrate.email.jesus', `
+    UPDATE users_Gantt SET email='jesusrangel3@gmail.com'
+    WHERE email='jesus@royaltransports.com.mx';
+  `);
+  await step('migrate.email.domain', `
+    UPDATE users_Gantt SET email = REPLACE(email, '@royaltransports.com.mx', '@gmail.com')
+    WHERE email LIKE '%@royaltransports.com.mx';
+  `);
+  await step('migrate.role.rene', `
+    UPDATE users_Gantt SET role='Project Manager', status='active'
+    WHERE email='renedejesusrangel228@gmail.com' AND role <> 'Project Manager';
+  `);
+
   // ── Garantizar usuario admin (aunque el seed no haya corrido) ────────────
   try {
     const check = await pool.request()
-      .input('email', sql.NVarChar, 'renerangel@royaltransports.com.mx')
+      .input('email', sql.NVarChar, 'renedejesusrangel228@gmail.com')
       .query('SELECT COUNT(*) AS cnt FROM users_Gantt WHERE email=@email');
     if (check.recordset[0].cnt === 0) {
       const adminHash = await bcrypt.hash(sha256('Royal1234'), 10);
       await pool.request()
         .input('name',              sql.NVarChar, 'René de Jesús Rangel Buitrón')
-        .input('email',             sql.NVarChar, 'renerangel@royaltransports.com.mx')
+        .input('email',             sql.NVarChar, 'renedejesusrangel228@gmail.com')
         .input('initials',          sql.NVarChar, 'RR')
         .input('color',             sql.NVarChar, '#7c5cfc')
         .input('role',              sql.NVarChar, 'Project Manager')
@@ -355,7 +373,7 @@ async function runMigrations(pool: sql.ConnectionPool) {
       console.log('[migration] Usuario admin creado en RoyalCIF.');
     } else {
       await pool.request()
-        .input('email', sql.NVarChar, 'renerangel@royaltransports.com.mx')
+        .input('email', sql.NVarChar, 'renedejesusrangel228@gmail.com')
         .query('UPDATE users_Gantt SET mustChangePassword=0 WHERE email=@email');
     }
   } catch (err: any) {
@@ -424,19 +442,19 @@ async function handleMockQuery<T = any>(
 
     // Usuarios de respaldo con sus contraseñas reales (modo demo/fallback sin BD)
     const fallbackUsers: Record<string, { id: string; name: string; email: string; initials: string; color: string; role: string; password: string }> = {
-      "renerangel@royaltransports.com.mx": {
+      "renedejesusrangel228@gmail.com": {
         id: "u_rene",
         name: "René de Jesús Rangel Buitrón",
-        email: "renerangel@royaltransports.com.mx",
+        email: "renedejesusrangel228@gmail.com",
         initials: "RR",
         color: "#7c5cfc",
         role: "Project Manager",
         password: sha256('Royal1234'),
       },
-      "jesus@royaltransports.com.mx": {
+      "jesusrangel3@gmail.com": {
         id: "u_jesus",
         name: "Jesús Sánchez",
-        email: "jesus@royaltransports.com.mx",
+        email: "jesusrangel3@gmail.com",
         initials: "JS",
         color: "#D4A017",
         role: "Administrador",
@@ -512,7 +530,7 @@ async function handleMockQuery<T = any>(
       users.push({
         id: "u_rene",
         name: "René de Jesús Rangel Buitrón",
-        email: "renerangel@royaltransports.com.mx",
+        email: "renedejesusrangel228@gmail.com",
         initials: "RR",
         color: "#7c5cfc",
         role: "Project Manager",
@@ -530,7 +548,7 @@ async function handleMockQuery<T = any>(
       users.push({
         id: "u_jesus",
         name: "Jesús Sánchez",
-        email: "jesus@royaltransports.com.mx",
+        email: "jesusrangel3@gmail.com",
         initials: "JS",
         color: "#D4A017",
         role: "Administrador",

@@ -236,7 +236,7 @@ export default function Notes_GanttView({ users_Gantt, Projects_Gantt, activePro
       const url = activeProjectId ? `/api/notes?projectId=${activeProjectId}` : '/api/notes';
       const res = await fetch(url);
       const data = await res.json();
-      if (data.success) setNotes_Gantt(data.notes);
+      if (data.success) setNotes_Gantt(data.Notes_Gantt || data.notes || []);
     } catch (err) {
       console.error("Error cargando notas:", err);
     } finally {
