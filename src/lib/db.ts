@@ -324,6 +324,39 @@ async function runMigrations(pool: sql.ConnectionPool) {
   await step('Tasks_Gantt.priority',   `IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('Tasks_Gantt') AND name='priority') ALTER TABLE Tasks_Gantt ADD priority NVARCHAR(20) NOT NULL DEFAULT 'media';`);
   await step('Tasks_Gantt.checklist',  `IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('Tasks_Gantt') AND name='checklist') ALTER TABLE Tasks_Gantt ADD checklist NVARCHAR(MAX) NULL;`);
 
+  // ── ApprovalLog_Gantt (historial de aprobaciones para sección Aprobaciones) ─
+  await step('create.ApprovalLog_Gantt', `
+    IF NOT EXISTS (SELECT 1 FROM sys.objects WHERE object_id=OBJECT_ID(N'ApprovalLog_Gantt') AND type='U')
+    CREATE TABLE ApprovalLog_Gantt (
+      id            NVARCHAR(50)  NOT NULL PRIMARY KEY,
+      taskId        NVARCHAR(50)  NOT NULL,
+      taskTitle     NVARCHAR(500) NOT NULL DEFAULT '',
+      action        NVARCHAR(20)  NOT NULL,
+      performedBy   NVARCHAR(50)  NOT NULL,
+      performedByName NVARCHAR(255) NOT NULL DEFAULT '',
+      comment       NVARCHAR(MAX) NULL,
+      previousStatus NVARCHAR(30) NULL,
+      createdAt     DATETIME2     NOT NULL DEFAULT GETDATE()
+    );`);
+
+  // ── WorkloadConfig_Gantt (umbrales de carga para sección Carga de Trabajo) ─
+  await step('create.WorkloadConfig_Gantt', `
+    IF NOT EXISTS (SELECT 1 FROM sys.objects WHERE object_id=OBJECT_ID(N'WorkloadConfig_Gantt') AND type='U')
+    CREATE TABLE WorkloadConfig_Gantt (
+      configKey   NVARCHAR(50)  NOT NULL PRIMARY KEY,
+      configValue INT           NOT NULL,
+      label       NVARCHAR(100) NOT NULL DEFAULT '',
+      updatedAt   DATETIME2     NOT NULL DEFAULT GETDATE()
+    );`);
+
+  await step('seed.WorkloadConfig_Gantt.normal', `
+    IF NOT EXISTS (SELECT 1 FROM WorkloadConfig_Gantt WHERE configKey='max_normal')
+    INSERT INTO WorkloadConfig_Gantt (configKey, configValue, label) VALUES ('max_normal', 3, 'Máx tareas para estado Normal');`);
+
+  await step('seed.WorkloadConfig_Gantt.cargado', `
+    IF NOT EXISTS (SELECT 1 FROM WorkloadConfig_Gantt WHERE configKey='max_cargado')
+    INSERT INTO WorkloadConfig_Gantt (configKey, configValue, label) VALUES ('max_cargado', 6, 'Máx tareas para estado Cargado');`);
+
   // ── Fase 'Bloqueadas' para proj1 ──────────────────────────────────────────
   await step('seed.phase.bloqueadas', `
     IF EXISTS (SELECT 1 FROM sys.objects WHERE object_id=OBJECT_ID(N'Phases_Gantt') AND type='U')

@@ -38,6 +38,18 @@ export default function ApprovalsView({
   const pending = Tasks_Gantt.filter(t => t.status === "review");
   const recentlyApproved = Tasks_Gantt.filter(t => t.status === "done").slice(0, 5);
 
+  async function logAction(taskId: string, taskTitle: string, action: "approved" | "rejected", comment: string, previousStatus: string) {
+    try {
+      await fetch("/api/approvals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ taskId, taskTitle, action, comment, previousStatus }),
+      });
+    } catch (e) {
+      console.error("Error guardando log de aprobación:", e);
+    }
+  }
+
   async function approve(task: Task) {
     setLoading(task.id);
     const updated: Task = { ...task, status: "done", progress: 100 };
@@ -48,6 +60,7 @@ export default function ApprovalsView({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updated),
       });
+      await logAction(task.id, task.title, "approved", "", task.status);
     } catch (e) {
       console.error(e);
     }
@@ -70,6 +83,7 @@ export default function ApprovalsView({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updated),
       });
+      await logAction(task.id, task.title, "rejected", rejectNote, task.status);
     } catch (e) {
       console.error(e);
     }
