@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronUp, ChevronDown, Search, Download, Plus, Trash2, List } from "lucide-react";
+import { ChevronUp, ChevronDown, Search, Download, Plus, Trash2, List, CheckSquare } from "lucide-react";
 import { Task, TaskStatus, TaskPriority, Project, AuthUser } from "@/types";
 
 interface ListViewProps {
@@ -273,6 +273,9 @@ export default function ListView({
                   </div>
                 </th>
               ))}
+              <th className="w-28 px-3 py-2 text-left text-[#8b93b8] font-semibold">
+                <div className="flex items-center gap-1"><CheckSquare size={11} /> Checklist</div>
+              </th>
               <th className="w-10 px-3 py-2" />
             </tr>
           </thead>
@@ -508,6 +511,27 @@ export default function ListView({
                         </span>
                       </div>
                     )}
+                  </td>
+
+                  {/* Checklist */}
+                  <td className="px-3 py-2">
+                    {(() => {
+                      const items = task.checklist || [];
+                      if (items.length === 0) return <span className="text-[#2e3352]">—</span>;
+                      const done = items.filter(i => i.done).length;
+                      const pct  = Math.round((done / items.length) * 100);
+                      const color = pct === 100 ? "#3ecf8e" : pct > 0 ? "#f5a623" : "#8b93b8";
+                      return (
+                        <div className="flex items-center gap-2">
+                          <div className="w-12 h-1.5 rounded-full bg-[#2e3352] overflow-hidden">
+                            <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: color }} />
+                          </div>
+                          <span className="text-[10px] font-semibold tabular-nums" style={{ color }}>
+                            {done}/{items.length}
+                          </span>
+                        </div>
+                      );
+                    })()}
                   </td>
 
                   {/* Delete */}
