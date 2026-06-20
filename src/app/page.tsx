@@ -15,6 +15,8 @@ import NotesView from "@/components/views/NotesView";
 import ActivityView from "@/components/views/ActivityView";
 import ListView from "@/components/views/ListView";
 import BudgetView from "@/components/views/BudgetView";
+import WorkloadView from "@/components/views/WorkloadView";
+import ApprovalsView from "@/components/views/ApprovalsView";
 import { AuthUser, clearSession, getSessionUser, saveSessionUser } from "@/lib/auth";
 import { mockTasks, mockPhases, mockProjects, mockMilestones } from "@/lib/mockData";
 import { Task, Phase, Project, Milestone, Notification } from "@/types";
@@ -25,7 +27,7 @@ import { Task, Phase, Project, Milestone, Notification } from "@/types";
  * Habilita multi-proyectos, informes y aprobaciones administrativas.
  */
 
-type Tab = "gantt" | "board" | "calendar" | "reports" | "users_Gantt" | "Projects_Gantt" | "Notes_Gantt" | "activity" | "list" | "budget";
+type Tab = "gantt" | "board" | "calendar" | "reports" | "users_Gantt" | "Projects_Gantt" | "workload" | "approvals" | "list" | "budget";
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: "Projects_Gantt",  label: "Proyectos",         icon: <Briefcase size={15} /> },
@@ -34,8 +36,8 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: "board",     label: "Tablero",           icon: <Trello size={15} /> },
   { id: "calendar",  label: "Calendario",        icon: <Calendar size={15} /> },
   { id: "reports",   label: "Informes",          icon: <BarChart2 size={15} /> },
-  { id: "Notes_Gantt",     label: "Notas",             icon: <StickyNote size={15} /> },
-  { id: "budget",    label: "Presupuesto",        icon: <DollarSign size={15} /> },
+  { id: "workload",  label: "Carga de Trabajo",  icon: <Users size={15} /> },
+  { id: "approvals", label: "Aprobaciones",       icon: <Target size={15} /> },
   { id: "users_Gantt",     label: "Personas",          icon: <Users size={15} /> },
 ];
 
@@ -1157,20 +1159,19 @@ export default function Home() {
             setActiveTab={setActiveTab}
           />
         )}
-        {activeTab === "Notes_Gantt" && (
-          <NotesView
+        {activeTab === "workload" && (
+          <WorkloadView
+            Tasks_Gantt={projectTasks}
             users_Gantt={users_Gantt}
-            Projects_Gantt={Projects_Gantt}
-            activeProjectId={activeProjectId}
           />
         )}
-        {activeTab === "budget" && (
-          <BudgetView
+        {activeTab === "approvals" && (
+          <ApprovalsView
             Tasks_Gantt={projectTasks}
             setTasks={handleSetTasks}
             Projects_Gantt={Projects_Gantt}
             users_Gantt={users_Gantt}
-            activeProjectId={activeProj.id}
+            currentUser={user}
           />
         )}
         {activeTab === "list" && (
