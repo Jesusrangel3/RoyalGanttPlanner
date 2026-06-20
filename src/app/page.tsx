@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { io } from "socket.io-client";
-import { LayoutDashboard, Trello, Calendar, Users, LogOut, BarChart2, Plus, Target, X, Bell, Check, Trash2, MessageSquare, AlertTriangle, Briefcase, Sun, Moon, StickyNote, Activity, List, DollarSign } from "lucide-react";
+import { LayoutDashboard, Trello, Calendar, Users, LogOut, BarChart2, Plus, Target, X, Bell, Check, Trash2, MessageSquare, AlertTriangle, Briefcase, Sun, Moon, StickyNote, Activity, List, DollarSign, CheckSquare } from "lucide-react";
 import AuthView from "@/components/AuthView";
 import ChangePasswordView from "@/components/ChangePasswordView";
 import GanttView from "@/components/views/GanttView";
@@ -17,6 +17,7 @@ import ListView from "@/components/views/ListView";
 import BudgetView from "@/components/views/BudgetView";
 import WorkloadView from "@/components/views/WorkloadView";
 import ApprovalsView from "@/components/views/ApprovalsView";
+import ChecklistView from "@/components/views/ChecklistView";
 import { AuthUser, clearSession, getSessionUser, saveSessionUser } from "@/lib/auth";
 import { mockTasks, mockPhases, mockProjects, mockMilestones } from "@/lib/mockData";
 import { Task, Phase, Project, Milestone, Notification } from "@/types";
@@ -27,7 +28,7 @@ import { Task, Phase, Project, Milestone, Notification } from "@/types";
  * Habilita multi-proyectos, informes y aprobaciones administrativas.
  */
 
-type Tab = "gantt" | "board" | "calendar" | "reports" | "users_Gantt" | "Projects_Gantt" | "workload" | "approvals" | "list" | "budget";
+type Tab = "gantt" | "board" | "calendar" | "reports" | "users_Gantt" | "Projects_Gantt" | "workload" | "approvals" | "list" | "budget" | "checklist";
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: "Projects_Gantt",  label: "Proyectos",         icon: <Briefcase size={15} /> },
@@ -36,6 +37,7 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: "board",     label: "Tablero",           icon: <Trello size={15} /> },
   { id: "calendar",  label: "Calendario",        icon: <Calendar size={15} /> },
   { id: "reports",   label: "Informes",          icon: <BarChart2 size={15} /> },
+  { id: "checklist", label: "Checklist",          icon: <CheckSquare size={15} /> },
   { id: "workload",  label: "Carga de Trabajo",  icon: <Users size={15} /> },
   { id: "approvals", label: "Aprobaciones",       icon: <Target size={15} /> },
   { id: "users_Gantt",     label: "Personas",          icon: <Users size={15} /> },
@@ -1157,6 +1159,13 @@ export default function Home() {
             activeProjectId={activeProjectId}
             setActiveProjectId={setActiveProjectId}
             setActiveTab={setActiveTab}
+          />
+        )}
+        {activeTab === "checklist" && (
+          <ChecklistView
+            Tasks_Gantt={projectTasks}
+            setTasks={handleSetTasks}
+            users_Gantt={users_Gantt}
           />
         )}
         {activeTab === "workload" && (
