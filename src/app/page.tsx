@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { io } from "socket.io-client";
-import { LayoutDashboard, Trello, Calendar, Users, LogOut, BarChart2, Plus, Target, X, Bell, Check, Trash2, MessageSquare, AlertTriangle, Briefcase, Sun, Moon, StickyNote, Activity } from "lucide-react";
+import { LayoutDashboard, Trello, Calendar, Users, LogOut, BarChart2, Plus, Target, X, Bell, Check, Trash2, MessageSquare, AlertTriangle, Briefcase, Sun, Moon, StickyNote, Activity, List } from "lucide-react";
 import AuthView from "@/components/AuthView";
 import ChangePasswordView from "@/components/ChangePasswordView";
 import GanttView from "@/components/views/GanttView";
@@ -13,6 +13,7 @@ import UsersView from "@/components/views/UsersView";
 import ProjectsView from "@/components/views/ProjectsView";
 import NotesView from "@/components/views/NotesView";
 import ActivityView from "@/components/views/ActivityView";
+import ListView from "@/components/views/ListView";
 import { AuthUser, clearSession, getSessionUser, saveSessionUser } from "@/lib/auth";
 import { mockTasks, mockPhases, mockProjects, mockMilestones } from "@/lib/mockData";
 import { Task, Phase, Project, Milestone, Notification } from "@/types";
@@ -23,10 +24,11 @@ import { Task, Phase, Project, Milestone, Notification } from "@/types";
  * Habilita multi-proyectos, informes y aprobaciones administrativas.
  */
 
-type Tab = "gantt" | "board" | "calendar" | "reports" | "users_Gantt" | "Projects_Gantt" | "Notes_Gantt" | "activity";
+type Tab = "gantt" | "board" | "calendar" | "reports" | "users_Gantt" | "Projects_Gantt" | "Notes_Gantt" | "activity" | "list";
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: "Projects_Gantt",  label: "Proyectos",         icon: <Briefcase size={15} /> },
+  { id: "list",      label: "Lista",             icon: <List size={15} /> },
   { id: "gantt",     label: "Diagrama de Gantt", icon: <LayoutDashboard size={15} /> },
   { id: "board",     label: "Tablero",           icon: <Trello size={15} /> },
   { id: "calendar",  label: "Calendario",        icon: <Calendar size={15} /> },
@@ -1165,6 +1167,15 @@ export default function Home() {
           <ActivityView
             users_Gantt={users_Gantt}
             currentUser={user}
+          />
+        )}
+        {activeTab === "list" && (
+          <ListView
+            Tasks_Gantt={projectTasks}
+            setTasks={handleSetTasks}
+            Projects_Gantt={Projects_Gantt}
+            users_Gantt={users_Gantt}
+            activeProjectId={activeProj.id}
           />
         )}
       </main>
