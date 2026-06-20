@@ -824,18 +824,10 @@ export default function ListView({
                   <p className="text-[12px] font-bold text-[#e8eaf6] truncate">{task.title}</p>
                   <p className="text-[10px] text-[#8b93b8]">{items.length} paso{items.length !== 1 ? "s" : ""} · {pct}% completado</p>
                 </div>
-                <div className="flex items-center gap-1.5 flex-shrink-0">
-                  <button
-                    onClick={() => { setShowTemplates(v => !v); }}
-                    className="text-[9px] font-semibold px-2 py-1 rounded bg-[#2e3352] text-[#8b93b8] hover:text-[#4f7cff] hover:bg-[#4f7cff]/10 transition-all whitespace-nowrap"
-                  >
-                    Plantillas
-                  </button>
-                  <button onClick={() => { setChecklistPopover(null); setShowTemplates(false); }}
-                    className="text-[#8b93b8] hover:text-white transition-colors">
-                    <X size={13} />
-                  </button>
-                </div>
+                <button onClick={() => { setChecklistPopover(null); }}
+                  className="text-[#8b93b8] hover:text-white transition-colors flex-shrink-0">
+                  <X size={13} />
+                </button>
               </div>
 
               {/* Barra de progreso */}
@@ -859,27 +851,12 @@ export default function ListView({
               </div>
             </div>
 
-            {/* ── PLANTILLAS DROPDOWN ── */}
-            {showTemplates && (
-              <div className="border-b border-[#2e3352] bg-[#0f1117] px-3 py-2 flex-shrink-0">
-                <p className="text-[9px] text-[#8b93b8] font-semibold uppercase tracking-wider mb-1.5">Plantillas de fletes</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {Object.keys(FLETE_TEMPLATES).map(name => (
-                    <button key={name} onClick={() => applyTemplate(name)}
-                      className="text-[10px] px-2.5 py-1 rounded-full bg-[#2e3352] text-[#e8eaf6] hover:bg-[#4f7cff]/20 hover:text-[#4f7cff] transition-all border border-[#2e3352] hover:border-[#4f7cff]/40">
-                      {name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* ── LISTA DE PASOS ── */}
             <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1 min-h-0">
-              {items.length === 0 && !showTemplates && (
+              {items.length === 0 && (
                 <div className="flex flex-col items-center py-6 text-[#8b93b8]">
                   <CheckSquare size={24} className="opacity-20 mb-2" />
-                  <p className="text-[11px] italic">Sin pasos — agrega uno abajo o usa una plantilla</p>
+                  <p className="text-[11px] italic">Sin pasos — agrega uno abajo</p>
                 </div>
               )}
 
@@ -939,46 +916,16 @@ export default function ListView({
                       </div>
                     </div>
 
-                    {/* Expanded: notes + edit fields */}
+                    {/* Expanded: solo notas */}
                     {isExpanded && (
-                      <div className="px-3 pb-2.5 pt-1 border-t border-[#2e3352]/40 space-y-2">
+                      <div className="px-3 pb-2.5 pt-1 border-t border-[#2e3352]/40">
                         <textarea
-                          className="w-full bg-[#0f1117] border border-[#2e3352] rounded px-2 py-1 text-[10px] text-[#e8eaf6] placeholder-[#8b93b8] outline-none resize-none"
+                          className="w-full bg-[#0f1117] border border-[#2e3352] rounded px-2 py-1.5 text-[10px] text-[#e8eaf6] placeholder-[#8b93b8] outline-none resize-none"
                           rows={2}
                           placeholder="Notas / descripción del paso..."
                           value={item.notes || ""}
                           onChange={e => saveTaskChecklist({ ...task, checklist: task.checklist?.map(i => i.id === item.id ? { ...i, notes: e.target.value } : i) })}
                         />
-                        <div className="flex gap-2">
-                          <div className="flex-1">
-                            <label className="text-[8px] text-[#8b93b8] uppercase font-semibold">Fecha límite</label>
-                            <input type="date" className="w-full bg-[#0f1117] border border-[#2e3352] rounded px-1.5 py-0.5 text-[10px] text-[#e8eaf6] outline-none mt-0.5"
-                              value={item.dueDate || ""}
-                              onChange={e => saveTaskChecklist({ ...task, checklist: task.checklist?.map(i => i.id === item.id ? { ...i, dueDate: e.target.value || undefined } : i) })}
-                            />
-                          </div>
-                          <div className="flex-1">
-                            <label className="text-[8px] text-[#8b93b8] uppercase font-semibold">Responsable</label>
-                            <select className="w-full bg-[#0f1117] border border-[#2e3352] rounded px-1.5 py-0.5 text-[10px] text-[#e8eaf6] outline-none mt-0.5"
-                              value={item.assigneeId || ""}
-                              onChange={e => saveTaskChecklist({ ...task, checklist: task.checklist?.map(i => i.id === item.id ? { ...i, assigneeId: e.target.value || undefined } : i) })}
-                            >
-                              <option value="">Sin asignar</option>
-                              {users_Gantt.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-                            </select>
-                          </div>
-                          <div className="flex-1">
-                            <label className="text-[8px] text-[#8b93b8] uppercase font-semibold">Prioridad</label>
-                            <select className="w-full bg-[#0f1117] border border-[#2e3352] rounded px-1.5 py-0.5 text-[10px] text-[#e8eaf6] outline-none mt-0.5"
-                              value={item.priority || "medium"}
-                              onChange={e => saveTaskChecklist({ ...task, checklist: task.checklist?.map(i => i.id === item.id ? { ...i, priority: e.target.value as any } : i) })}
-                            >
-                              <option value="high">Alta</option>
-                              <option value="medium">Media</option>
-                              <option value="low">Baja</option>
-                            </select>
-                          </div>
-                        </div>
                       </div>
                     )}
                   </div>
@@ -987,31 +934,18 @@ export default function ListView({
             </div>
 
             {/* ── AGREGAR PASO ── */}
-            <div className="border-t border-[#2e3352] px-3 pt-2.5 pb-3 flex-shrink-0 space-y-2">
-              <input
-                autoFocus
-                className="w-full bg-[#0f1117] border border-[#2e3352] focus:border-[#4f7cff]/60 rounded-lg px-3 py-1.5 text-[11px] text-[#e8eaf6] placeholder-[#8b93b8] outline-none transition-colors"
-                placeholder="Descripción del paso... (Enter para agregar)"
-                value={popoverNewText}
-                onChange={e => setPopoverNewText(e.target.value)}
-                onKeyDown={e => { if (e.key === "Enter") addItem(); if (e.key === "Escape") { setChecklistPopover(null); setShowTemplates(false); } }}
-              />
+            <div className="border-t border-[#2e3352] px-3 pt-2.5 pb-3 flex-shrink-0">
               <div className="flex gap-2 items-center">
-                <input type="date" className="flex-1 bg-[#0f1117] border border-[#2e3352] rounded px-2 py-1 text-[10px] text-[#e8eaf6] outline-none"
-                  value={popoverNewDue} onChange={e => setPopoverNewDue(e.target.value)} />
-                <select className="flex-1 bg-[#0f1117] border border-[#2e3352] rounded px-2 py-1 text-[10px] text-[#e8eaf6] outline-none"
-                  value={popoverNewAssignee} onChange={e => setPopoverNewAssignee(e.target.value)}>
-                  <option value="">Sin asignar</option>
-                  {users_Gantt.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
-                </select>
-                <select className="bg-[#0f1117] border border-[#2e3352] rounded px-2 py-1 text-[10px] text-[#e8eaf6] outline-none"
-                  value={popoverNewPriority} onChange={e => setPopoverNewPriority(e.target.value as any)}>
-                  <option value="high">Alta</option>
-                  <option value="medium">Media</option>
-                  <option value="low">Baja</option>
-                </select>
+                <input
+                  autoFocus
+                  className="flex-1 bg-[#0f1117] border border-[#2e3352] focus:border-[#4f7cff]/60 rounded-lg px-3 py-1.5 text-[11px] text-[#e8eaf6] placeholder-[#8b93b8] outline-none transition-colors"
+                  placeholder="Agregar paso... (Enter)"
+                  value={popoverNewText}
+                  onChange={e => setPopoverNewText(e.target.value)}
+                  onKeyDown={e => { if (e.key === "Enter") addItem(); if (e.key === "Escape") setChecklistPopover(null); }}
+                />
                 <button onClick={addItem} disabled={!popoverNewText.trim()}
-                  className="px-3 py-1 rounded-lg bg-[#4f7cff] text-white text-[10px] font-bold hover:bg-[#4f7cff]/80 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex-shrink-0">
+                  className="px-3 py-1.5 rounded-lg bg-[#4f7cff] text-white text-[10px] font-bold hover:bg-[#4f7cff]/80 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex-shrink-0">
                   <Plus size={13} />
                 </button>
               </div>
