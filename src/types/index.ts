@@ -86,6 +86,11 @@ export interface ChecklistItem {
   id: string;
   text: string;
   done: boolean;
+  status?: "pending" | "in_progress" | "done" | "blocked";
+  dueDate?: string;
+  assigneeId?: string;
+  priority?: "high" | "medium" | "low";
+  notes?: string;
 }
 
 export interface TaskComment {

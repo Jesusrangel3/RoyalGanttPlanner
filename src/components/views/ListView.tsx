@@ -50,7 +50,44 @@ export default function ListView({
   const [saving, setSaving]               = useState(false);
   const [checklistPopover, setChecklistPopover] = useState<{ taskId: string; top: number; left: number } | null>(null);
   const [popoverNewText, setPopoverNewText]     = useState("");
+  const [popoverNewDue, setPopoverNewDue]       = useState("");
+  const [popoverNewAssignee, setPopoverNewAssignee] = useState("");
+  const [popoverNewPriority, setPopoverNewPriority] = useState<"high"|"medium"|"low">("medium");
+  const [expandedItem, setExpandedItem]         = useState<string | null>(null);
+  const [showTemplates, setShowTemplates]       = useState(false);
   const popoverRef = useRef<HTMLDivElement>(null);
+
+  const FLETE_TEMPLATES: Record<string, { id: string; text: string; priority: "high"|"medium"|"low" }[]> = {
+    "Revisión Pre-Viaje": [
+      { id:"t1", text:"Revisar nivel de aceite y líquidos", priority:"high" },
+      { id:"t2", text:"Verificar presión de neumáticos", priority:"high" },
+      { id:"t3", text:"Comprobar luces y señales", priority:"high" },
+      { id:"t4", text:"Inspeccionar frenos", priority:"high" },
+      { id:"t5", text:"Validar documentación del conductor", priority:"medium" },
+      { id:"t6", text:"Verificar seguro y permisos de circulación", priority:"medium" },
+    ],
+    "Carga y Despacho": [
+      { id:"c1", text:"Confirmar peso y dimensiones de la carga", priority:"high" },
+      { id:"c2", text:"Revisar embalaje y sujeción", priority:"high" },
+      { id:"c3", text:"Tomar fotos del estado inicial de la carga", priority:"medium" },
+      { id:"c4", text:"Firmar carta de porte / guía de remisión", priority:"high" },
+      { id:"c5", text:"Confirmar dirección y contacto de entrega", priority:"medium" },
+    ],
+    "Entrega de Mercancía": [
+      { id:"e1", text:"Verificar integridad de la carga al llegar", priority:"high" },
+      { id:"e2", text:"Tomar fotos de entrega", priority:"medium" },
+      { id:"e3", text:"Obtener firma de recepción", priority:"high" },
+      { id:"e4", text:"Entregar facturas y documentos al receptor", priority:"high" },
+      { id:"e5", text:"Reportar cualquier incidencia al supervisor", priority:"medium" },
+    ],
+    "Mantenimiento Vehículo": [
+      { id:"m1", text:"Cambio de aceite y filtros", priority:"high" },
+      { id:"m2", text:"Revisión de frenos y pastillas", priority:"high" },
+      { id:"m3", text:"Inspección de neumáticos (desgaste/presión)", priority:"high" },
+      { id:"m4", text:"Verificar sistema eléctrico", priority:"medium" },
+      { id:"m5", text:"Limpiar y desinfectar cabina", priority:"low" },
+    ],
+  };
 
   useEffect(() => {
     if (!checklistPopover) return;
@@ -717,93 +754,267 @@ export default function ListView({
         )}
       </div>
 
-      {/* ── Popover de Checklist ── */}
+      {/* ── Popover de Checklist Avanzado ── */}
       {checklistPopover && (() => {
-        const task = popoverTask();
-        if (!task) return null;
-        const items = task.checklist || [];
-        const done  = items.filter(i => i.done).length;
-        const pct   = items.length > 0 ? Math.round((done / items.length) * 100) : 0;
-        const color = pct === 100 ? "#3ecf8e" : pct > 0 ? "#f5a623" : "#8b93b8";
+        const taskRaw = popoverTask();
+        if (!taskRaw) return null;
+        const task = taskRaw as import("@/types").Task;
+        const items    = task.checklist || [];
+        const today    = new Date().toISOString().split("T")[0];
+        const cntDone  = items.filter(i => i.status === "done" || i.done).length;
+        const cntProg  = items.filter(i => i.status === "in_progress").length;
+        const cntBlock = items.filter(i => i.status === "blocked").length;
+        const cntOver  = items.filter(i => i.dueDate && i.dueDate < today && i.status !== "done" && !i.done).length;
+        const pct = items.length > 0 ? Math.round((cntDone / items.length) * 100) : 0;
+        const barColor = pct === 100 ? "#3ecf8e" : pct > 60 ? "#4f7cff" : pct > 0 ? "#f5a623" : "#2e3352";
+
+        const PRIORITY_COLORS: Record<string, string> = { high: "#ff5c5c", medium: "#f5a623", low: "#3ecf8e" };
+        const PRIORITY_LABELS: Record<string, string> = { high: "Alta", medium: "Media", low: "Baja" };
+
+        function cycleStatus(item: typeof items[0]) {
+          const cycle: Array<typeof item.status> = ["pending", "in_progress", "done", "blocked"];
+          const curr = item.status || (item.done ? "done" : "pending");
+          const next = cycle[(cycle.indexOf(curr) + 1) % cycle.length];
+          saveTaskChecklist({ ...task, checklist: task.checklist?.map(i => i.id === item.id ? { ...i, status: next, done: next === "done" } : i) });
+        }
+
+        function StatusIcon({ item }: { item: typeof items[0] }) {
+          const s = item.status || (item.done ? "done" : "pending");
+          if (s === "done")       return <CheckSquare size={14} className="text-[#3ecf8e]" />;
+          if (s === "in_progress") return <div className="w-3.5 h-3.5 rounded-full border-2 border-[#4f7cff] border-t-transparent animate-spin" />;
+          if (s === "blocked")    return <div className="w-3.5 h-3.5 rounded border-2 border-[#ff5c5c] bg-[#ff5c5c]/20 flex items-center justify-center"><span className="text-[8px] text-[#ff5c5c] font-black">!</span></div>;
+          return <Square size={14} className="text-[#8b93b8]" />;
+        }
+
+        function addItem() {
+          if (!popoverNewText.trim()) return;
+          saveTaskChecklist({
+            ...task,
+            checklist: [...items, {
+              id: `chk_${Date.now()}`,
+              text: popoverNewText.trim(),
+              done: false,
+              status: "pending",
+              dueDate: popoverNewDue || undefined,
+              assigneeId: popoverNewAssignee || undefined,
+              priority: popoverNewPriority,
+            }],
+          });
+          setPopoverNewText(""); setPopoverNewDue(""); setPopoverNewAssignee(""); setPopoverNewPriority("medium");
+        }
+
+        function applyTemplate(name: string) {
+          const tpl = FLETE_TEMPLATES[name];
+          const newItems = tpl.map(t => ({ id: `chk_${Date.now()}_${t.id}`, text: t.text, done: false, status: "pending" as const, priority: t.priority }));
+          saveTaskChecklist({ ...task, checklist: [...items, ...newItems] });
+          setShowTemplates(false);
+        }
 
         return (
           <div
             ref={popoverRef}
-            className="fixed z-50 w-72 bg-[#1a1d27] border border-[#2e3352] rounded-xl shadow-2xl shadow-black/40 overflow-hidden"
-            style={{ top: checklistPopover.top, left: Math.min(checklistPopover.left, window.innerWidth - 300) }}
+            className="fixed z-50 bg-[#1a1d27] border border-[#2e3352] rounded-xl shadow-2xl shadow-black/60 overflow-hidden flex flex-col"
+            style={{ top: checklistPopover.top, left: Math.min(checklistPopover.left, window.innerWidth - 420), width: 400, maxHeight: "80vh" }}
           >
-            {/* Cabecera */}
-            <div className="flex items-center justify-between px-3 py-2.5 border-b border-[#2e3352]">
-              <div className="flex-1 min-w-0">
-                <p className="text-[11px] font-bold text-[#e8eaf6] truncate">{task.title}</p>
-                {items.length > 0 && (
-                  <div className="flex items-center gap-2 mt-1">
-                    <div className="flex-1 h-1 rounded-full bg-[#2e3352] overflow-hidden">
-                      <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
-                    </div>
-                    <span className="text-[9px] font-bold" style={{ color }}>{done}/{items.length}</span>
-                  </div>
-                )}
-              </div>
-              <button onClick={() => { setChecklistPopover(null); setPopoverNewText(""); }}
-                className="ml-2 text-[#8b93b8] hover:text-white transition-colors flex-shrink-0">
-                <X size={13} />
-              </button>
-            </div>
 
-            {/* Lista de pasos */}
-            <div className="max-h-56 overflow-y-auto px-3 py-2 space-y-1">
-              {items.length === 0 && (
-                <p className="text-[10px] text-[#8b93b8] text-center py-3 italic">Sin pasos aún — agrega uno abajo</p>
-              )}
-              {items.map(item => (
-                <div key={item.id} className="flex items-center gap-2 py-1 group">
+            {/* ── CABECERA ── */}
+            <div className="px-4 pt-3 pb-2.5 border-b border-[#2e3352] flex-shrink-0">
+              <div className="flex items-start justify-between gap-2 mb-2.5">
+                <div className="min-w-0">
+                  <p className="text-[12px] font-bold text-[#e8eaf6] truncate">{task.title}</p>
+                  <p className="text-[10px] text-[#8b93b8]">{items.length} paso{items.length !== 1 ? "s" : ""} · {pct}% completado</p>
+                </div>
+                <div className="flex items-center gap-1.5 flex-shrink-0">
                   <button
-                    onClick={() => saveTaskChecklist({ ...task, checklist: task.checklist?.map(i => i.id === item.id ? { ...i, done: !i.done } : i) })}
-                    className="flex-shrink-0 text-[#8b93b8] hover:text-[#4f7cff] transition-colors"
+                    onClick={() => { setShowTemplates(v => !v); }}
+                    className="text-[9px] font-semibold px-2 py-1 rounded bg-[#2e3352] text-[#8b93b8] hover:text-[#4f7cff] hover:bg-[#4f7cff]/10 transition-all whitespace-nowrap"
                   >
-                    {item.done ? <CheckSquare size={13} className="text-[#3ecf8e]" /> : <Square size={13} />}
+                    Plantillas
                   </button>
-                  <span className={`flex-1 text-[11px] leading-tight ${item.done ? "line-through text-[#8b93b8]" : "text-[#e8eaf6]"}`}>
-                    {item.text}
-                  </span>
-                  <button
-                    onClick={() => saveTaskChecklist({ ...task, checklist: task.checklist?.filter(i => i.id !== item.id) })}
-                    className="opacity-0 group-hover:opacity-100 text-[#ff5c5c] transition-all"
-                  >
-                    <Trash2 size={10} />
+                  <button onClick={() => { setChecklistPopover(null); setShowTemplates(false); }}
+                    className="text-[#8b93b8] hover:text-white transition-colors">
+                    <X size={13} />
                   </button>
                 </div>
-              ))}
+              </div>
+
+              {/* Barra de progreso */}
+              <div className="h-1.5 rounded-full bg-[#0f1117] overflow-hidden mb-2">
+                <div className="h-full rounded-full transition-all duration-300" style={{ width: `${pct}%`, backgroundColor: barColor }} />
+              </div>
+
+              {/* Stats row */}
+              <div className="flex gap-2">
+                {[
+                  { label: "Completados", val: cntDone,  color: "#3ecf8e" },
+                  { label: "En progreso", val: cntProg,  color: "#4f7cff" },
+                  { label: "Bloqueados",  val: cntBlock, color: "#ff5c5c" },
+                  { label: "Vencidos",    val: cntOver,  color: "#f5a623" },
+                ].map(s => (
+                  <div key={s.label} className="flex-1 text-center">
+                    <div className="text-sm font-bold" style={{ color: s.val > 0 ? s.color : "#2e3352" }}>{s.val}</div>
+                    <div className="text-[8px] text-[#8b93b8] leading-tight">{s.label}</div>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            {/* Input para agregar */}
-            <div className="px-3 py-2 border-t border-[#2e3352] flex items-center gap-2">
+            {/* ── PLANTILLAS DROPDOWN ── */}
+            {showTemplates && (
+              <div className="border-b border-[#2e3352] bg-[#0f1117] px-3 py-2 flex-shrink-0">
+                <p className="text-[9px] text-[#8b93b8] font-semibold uppercase tracking-wider mb-1.5">Plantillas de fletes</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {Object.keys(FLETE_TEMPLATES).map(name => (
+                    <button key={name} onClick={() => applyTemplate(name)}
+                      className="text-[10px] px-2.5 py-1 rounded-full bg-[#2e3352] text-[#e8eaf6] hover:bg-[#4f7cff]/20 hover:text-[#4f7cff] transition-all border border-[#2e3352] hover:border-[#4f7cff]/40">
+                      {name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* ── LISTA DE PASOS ── */}
+            <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1 min-h-0">
+              {items.length === 0 && !showTemplates && (
+                <div className="flex flex-col items-center py-6 text-[#8b93b8]">
+                  <CheckSquare size={24} className="opacity-20 mb-2" />
+                  <p className="text-[11px] italic">Sin pasos — agrega uno abajo o usa una plantilla</p>
+                </div>
+              )}
+
+              {items.map(item => {
+                const isExpanded = expandedItem === item.id;
+                const isOver = item.dueDate && item.dueDate < today && item.status !== "done" && !item.done;
+                const assignee = users_Gantt.find(u => u.id === item.assigneeId);
+                const statusVal = item.status || (item.done ? "done" : "pending");
+
+                return (
+                  <div key={item.id} className={`rounded-lg border transition-all ${isOver ? "border-[#f5a623]/40 bg-[#f5a623]/5" : "border-[#2e3352]/60 bg-[#0f1117]/40"}`}>
+                    <div className="flex items-center gap-2 px-2.5 py-1.5 group">
+
+                      {/* Status toggle */}
+                      <button onClick={() => cycleStatus(item)} title="Cambiar estado" className="flex-shrink-0">
+                        <StatusIcon item={item} />
+                      </button>
+
+                      {/* Text */}
+                      <span className={`flex-1 text-[11px] leading-tight min-w-0 ${statusVal === "done" ? "line-through text-[#8b93b8]" : "text-[#e8eaf6]"}`}>
+                        {item.text}
+                      </span>
+
+                      {/* Priority badge */}
+                      {item.priority && item.priority !== "medium" && (
+                        <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full border flex-shrink-0"
+                          style={{ color: PRIORITY_COLORS[item.priority], borderColor: `${PRIORITY_COLORS[item.priority]}40`, backgroundColor: `${PRIORITY_COLORS[item.priority]}15` }}>
+                          {PRIORITY_LABELS[item.priority]}
+                        </span>
+                      )}
+
+                      {/* Due date */}
+                      {item.dueDate && (
+                        <span className={`text-[9px] flex-shrink-0 ${isOver ? "text-[#f5a623] font-semibold" : "text-[#8b93b8]"}`}>
+                          {isOver ? "⚠ " : ""}{item.dueDate.slice(5)}
+                        </span>
+                      )}
+
+                      {/* Assignee avatar */}
+                      {assignee && (
+                        <div className="w-4 h-4 rounded-full bg-[#4f7cff]/20 flex items-center justify-center text-[7px] font-bold text-[#4f7cff] flex-shrink-0"
+                          title={assignee.name}>
+                          {assignee.name?.split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase()}
+                        </div>
+                      )}
+
+                      {/* Expand / Delete */}
+                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0">
+                        <button onClick={() => setExpandedItem(isExpanded ? null : item.id)}
+                          className="text-[#8b93b8] hover:text-[#4f7cff] transition-colors text-[9px] px-1">
+                          {isExpanded ? "▲" : "▼"}
+                        </button>
+                        <button onClick={() => saveTaskChecklist({ ...task, checklist: task.checklist?.filter(i => i.id !== item.id) })}
+                          className="text-[#ff5c5c] hover:text-[#ff5c5c]/70 transition-colors">
+                          <Trash2 size={10} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Expanded: notes + edit fields */}
+                    {isExpanded && (
+                      <div className="px-3 pb-2.5 pt-1 border-t border-[#2e3352]/40 space-y-2">
+                        <textarea
+                          className="w-full bg-[#0f1117] border border-[#2e3352] rounded px-2 py-1 text-[10px] text-[#e8eaf6] placeholder-[#8b93b8] outline-none resize-none"
+                          rows={2}
+                          placeholder="Notas / descripción del paso..."
+                          value={item.notes || ""}
+                          onChange={e => saveTaskChecklist({ ...task, checklist: task.checklist?.map(i => i.id === item.id ? { ...i, notes: e.target.value } : i) })}
+                        />
+                        <div className="flex gap-2">
+                          <div className="flex-1">
+                            <label className="text-[8px] text-[#8b93b8] uppercase font-semibold">Fecha límite</label>
+                            <input type="date" className="w-full bg-[#0f1117] border border-[#2e3352] rounded px-1.5 py-0.5 text-[10px] text-[#e8eaf6] outline-none mt-0.5"
+                              value={item.dueDate || ""}
+                              onChange={e => saveTaskChecklist({ ...task, checklist: task.checklist?.map(i => i.id === item.id ? { ...i, dueDate: e.target.value || undefined } : i) })}
+                            />
+                          </div>
+                          <div className="flex-1">
+                            <label className="text-[8px] text-[#8b93b8] uppercase font-semibold">Responsable</label>
+                            <select className="w-full bg-[#0f1117] border border-[#2e3352] rounded px-1.5 py-0.5 text-[10px] text-[#e8eaf6] outline-none mt-0.5"
+                              value={item.assigneeId || ""}
+                              onChange={e => saveTaskChecklist({ ...task, checklist: task.checklist?.map(i => i.id === item.id ? { ...i, assigneeId: e.target.value || undefined } : i) })}
+                            >
+                              <option value="">Sin asignar</option>
+                              {users_Gantt.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                            </select>
+                          </div>
+                          <div className="flex-1">
+                            <label className="text-[8px] text-[#8b93b8] uppercase font-semibold">Prioridad</label>
+                            <select className="w-full bg-[#0f1117] border border-[#2e3352] rounded px-1.5 py-0.5 text-[10px] text-[#e8eaf6] outline-none mt-0.5"
+                              value={item.priority || "medium"}
+                              onChange={e => saveTaskChecklist({ ...task, checklist: task.checklist?.map(i => i.id === item.id ? { ...i, priority: e.target.value as any } : i) })}
+                            >
+                              <option value="high">Alta</option>
+                              <option value="medium">Media</option>
+                              <option value="low">Baja</option>
+                            </select>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* ── AGREGAR PASO ── */}
+            <div className="border-t border-[#2e3352] px-3 pt-2.5 pb-3 flex-shrink-0 space-y-2">
               <input
                 autoFocus
-                className="flex-1 bg-transparent text-[11px] text-[#e8eaf6] placeholder-[#8b93b8] outline-none"
-                placeholder="Agregar paso... (Enter)"
+                className="w-full bg-[#0f1117] border border-[#2e3352] focus:border-[#4f7cff]/60 rounded-lg px-3 py-1.5 text-[11px] text-[#e8eaf6] placeholder-[#8b93b8] outline-none transition-colors"
+                placeholder="Descripción del paso... (Enter para agregar)"
                 value={popoverNewText}
                 onChange={e => setPopoverNewText(e.target.value)}
-                onKeyDown={e => {
-                  if (e.key === "Enter" && popoverNewText.trim()) {
-                    saveTaskChecklist({ ...task, checklist: [...items, { id: `chk_${Date.now()}`, text: popoverNewText.trim(), done: false }] });
-                    setPopoverNewText("");
-                  }
-                  if (e.key === "Escape") { setChecklistPopover(null); setPopoverNewText(""); }
-                }}
+                onKeyDown={e => { if (e.key === "Enter") addItem(); if (e.key === "Escape") { setChecklistPopover(null); setShowTemplates(false); } }}
               />
-              {popoverNewText.trim() && (
-                <button
-                  onClick={() => {
-                    saveTaskChecklist({ ...task, checklist: [...items, { id: `chk_${Date.now()}`, text: popoverNewText.trim(), done: false }] });
-                    setPopoverNewText("");
-                  }}
-                  className="text-[#4f7cff] hover:text-white text-[10px] font-bold transition-colors"
-                >
-                  <Plus size={14} />
+              <div className="flex gap-2 items-center">
+                <input type="date" className="flex-1 bg-[#0f1117] border border-[#2e3352] rounded px-2 py-1 text-[10px] text-[#e8eaf6] outline-none"
+                  value={popoverNewDue} onChange={e => setPopoverNewDue(e.target.value)} />
+                <select className="flex-1 bg-[#0f1117] border border-[#2e3352] rounded px-2 py-1 text-[10px] text-[#e8eaf6] outline-none"
+                  value={popoverNewAssignee} onChange={e => setPopoverNewAssignee(e.target.value)}>
+                  <option value="">Sin asignar</option>
+                  {users_Gantt.map(u => <option key={u.id} value={u.id}>{u.name}</option>)}
+                </select>
+                <select className="bg-[#0f1117] border border-[#2e3352] rounded px-2 py-1 text-[10px] text-[#e8eaf6] outline-none"
+                  value={popoverNewPriority} onChange={e => setPopoverNewPriority(e.target.value as any)}>
+                  <option value="high">Alta</option>
+                  <option value="medium">Media</option>
+                  <option value="low">Baja</option>
+                </select>
+                <button onClick={addItem} disabled={!popoverNewText.trim()}
+                  className="px-3 py-1 rounded-lg bg-[#4f7cff] text-white text-[10px] font-bold hover:bg-[#4f7cff]/80 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex-shrink-0">
+                  <Plus size={13} />
                 </button>
-              )}
+              </div>
             </div>
           </div>
         );
