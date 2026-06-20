@@ -322,6 +322,7 @@ async function runMigrations(pool: sql.ConnectionPool) {
   await step('Tasks_Gantt.accepted',   `IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('Tasks_Gantt') AND name='accepted') ALTER TABLE Tasks_Gantt ADD accepted BIT NOT NULL DEFAULT 1;`);
   await step('Tasks_Gantt.boardOrder', `IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('Tasks_Gantt') AND name='boardOrder') ALTER TABLE Tasks_Gantt ADD boardOrder INT NOT NULL DEFAULT 0;`);
   await step('Tasks_Gantt.priority',   `IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('Tasks_Gantt') AND name='priority') ALTER TABLE Tasks_Gantt ADD priority NVARCHAR(20) NOT NULL DEFAULT 'media';`);
+  await step('Tasks_Gantt.checklist',  `IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id=OBJECT_ID('Tasks_Gantt') AND name='checklist') ALTER TABLE Tasks_Gantt ADD checklist NVARCHAR(MAX) NULL;`);
 
   // ── Fase 'Bloqueadas' para proj1 ──────────────────────────────────────────
   await step('seed.phase.bloqueadas', `

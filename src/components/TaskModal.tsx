@@ -1,8 +1,8 @@
 ﻿"use client";
 
 import { useState, useEffect } from "react";
-import { AlertTriangle, MessageSquare, ListTodo, Send, Package, DollarSign, Calendar, Clock, Plus, Trash2, Flag } from "lucide-react";
-import { Task, TaskStatus, TaskPriority, Milestone, Phase, AuthUser, TimeEntry } from "@/types";
+import { AlertTriangle, MessageSquare, ListTodo, Send, Package, DollarSign, Calendar, Clock, Plus, Trash2, Flag, CheckSquare, Square, CheckCheck } from "lucide-react";
+import { Task, TaskStatus, TaskPriority, Milestone, Phase, AuthUser, TimeEntry, ChecklistItem } from "@/types";
 import { getSessionUser } from "@/lib/auth";
 
 interface TaskModalProps {
@@ -42,7 +42,8 @@ export default function TaskModal({
   const currentUser = getSessionUser();
   const isPM = currentUser?.role === "Project Manager";
 
-  const [activeTab, setActiveTab] = useState<"details" | "comments" | "time">("details");
+  const [activeTab, setActiveTab] = useState<"details" | "checklist" | "comments" | "time">("details");
+  const [newCheckItem, setNewCheckItem] = useState("");
   const [TimeEntries_Gantt, setTimeEntries_Gantt] = useState<TimeEntry[]>([]);
   const [newHours, setNewHours] = useState("");
   const [newHoursDesc, setNewHoursDesc] = useState("");
@@ -274,6 +275,17 @@ export default function TaskModal({
             className={`flex items-center gap-1.5 px-4 py-2 border-b-2 transition ${activeTab === "details" ? "border-[#4f7cff] text-[#e8eaf6] bg-[#1a1d27]" : "border-transparent hover:text-[#e8eaf6]"}`}
           >
             <ListTodo size={14} /> Detalles de Tarea
+          </button>
+          <button
+            onClick={() => setActiveTab("checklist")}
+            className={`flex items-center gap-1.5 px-4 py-2 border-b-2 transition relative ${activeTab === "checklist" ? "border-[#f5a623] text-[#e8eaf6] bg-[#1a1d27]" : "border-transparent hover:text-[#e8eaf6]"}`}
+          >
+            <CheckCheck size={14} /> Checklist
+            {(form.checklist?.length || 0) > 0 && (
+              <span className="ml-1 bg-[#f5a623] text-white text-[9px] px-1.5 rounded-full">
+                {form.checklist?.filter(i => i.done).length}/{form.checklist?.length}
+              </span>
+            )}
           </button>
           <button
             onClick={() => setActiveTab("comments")}
@@ -634,6 +646,101 @@ export default function TaskModal({
                     </div>
                   ))
                 )}
+              </div>
+            </div>
+          ) : activeTab === "checklist" ? (
+            // PESTAÑA CHECKLIST
+            <div className="space-y-3">
+              {/* Barra de progreso */}
+              {(form.checklist?.length || 0) > 0 && (() => {
+                const done = form.checklist!.filter(i => i.done).length;
+                const total = form.checklist!.length;
+                const pct = Math.round((done / total) * 100);
+                return (
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-[10px] text-[#8b93b8]">
+                      <span>{done} de {total} completados</span>
+                      <span className="text-[#f5a623] font-bold">{pct}%</span>
+                    </div>
+                    <div className="h-1.5 rounded-full bg-[#2e3352] overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all"
+                        style={{ width: `${pct}%`, backgroundColor: pct === 100 ? "#3ecf8e" : "#f5a623" }}
+                      />
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Lista de items */}
+              <div className="space-y-1.5 max-h-[260px] overflow-y-auto pr-1">
+                {(form.checklist || []).map((item) => (
+                  <div key={item.id} className="flex items-center gap-2 group">
+                    <button
+                      onClick={() => setForm(prev => ({
+                        ...prev,
+                        checklist: prev.checklist?.map(i =>
+                          i.id === item.id ? { ...i, done: !i.done } : i
+                        ),
+                      }))}
+                      className="flex-shrink-0 text-[#8b93b8] hover:text-[#f5a623] transition-colors"
+                    >
+                      {item.done
+                        ? <CheckSquare size={15} className="text-[#3ecf8e]" />
+                        : <Square size={15} />}
+                    </button>
+                    <span className={`flex-1 text-xs ${item.done ? "line-through text-[#8b93b8]" : "text-[#e8eaf6]"}`}>
+                      {item.text}
+                    </span>
+                    <button
+                      onClick={() => setForm(prev => ({
+                        ...prev,
+                        checklist: prev.checklist?.filter(i => i.id !== item.id),
+                      }))}
+                      className="opacity-0 group-hover:opacity-100 text-[#ff5c5c] hover:text-[#ff5c5c]/80 transition-all"
+                    >
+                      <Trash2 size={11} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Agregar item */}
+              <div className="flex gap-2 pt-1 border-t border-[#2e3352]">
+                <input
+                  className={INPUT + " flex-1"}
+                  placeholder="Nuevo elemento del checklist..."
+                  value={newCheckItem}
+                  onChange={e => setNewCheckItem(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === "Enter" && newCheckItem.trim()) {
+                      setForm(prev => ({
+                        ...prev,
+                        checklist: [
+                          ...(prev.checklist || []),
+                          { id: `chk_${Date.now()}`, text: newCheckItem.trim(), done: false },
+                        ],
+                      }));
+                      setNewCheckItem("");
+                    }
+                  }}
+                />
+                <button
+                  onClick={() => {
+                    if (!newCheckItem.trim()) return;
+                    setForm(prev => ({
+                      ...prev,
+                      checklist: [
+                        ...(prev.checklist || []),
+                        { id: `chk_${Date.now()}`, text: newCheckItem.trim(), done: false },
+                      ],
+                    }));
+                    setNewCheckItem("");
+                  }}
+                  className={BTN_PRIMARY + " flex items-center gap-1"}
+                >
+                  <Plus size={12} /> Agregar
+                </button>
               </div>
             </div>
           ) : (

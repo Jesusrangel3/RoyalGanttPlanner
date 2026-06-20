@@ -74,11 +74,18 @@ export interface Task {
   materials?: string[];
   dependsOnTaskId?: string;
   comments?: TaskComment[];
+  checklist?: ChecklistItem[];
   createdAt?: string;
   updatedAt?: string;
   createdBy?: string;
   accepted?: boolean;
   boardOrder?: number;
+}
+
+export interface ChecklistItem {
+  id: string;
+  text: string;
+  done: boolean;
 }
 
 export interface TaskComment {

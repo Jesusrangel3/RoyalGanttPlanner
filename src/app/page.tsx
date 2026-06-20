@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { io } from "socket.io-client";
-import { LayoutDashboard, Trello, Calendar, Users, LogOut, BarChart2, Plus, Target, X, Bell, Check, Trash2, MessageSquare, AlertTriangle, Briefcase, Sun, Moon, StickyNote, Activity, List } from "lucide-react";
+import { LayoutDashboard, Trello, Calendar, Users, LogOut, BarChart2, Plus, Target, X, Bell, Check, Trash2, MessageSquare, AlertTriangle, Briefcase, Sun, Moon, StickyNote, Activity, List, DollarSign } from "lucide-react";
 import AuthView from "@/components/AuthView";
 import ChangePasswordView from "@/components/ChangePasswordView";
 import GanttView from "@/components/views/GanttView";
@@ -14,6 +14,7 @@ import ProjectsView from "@/components/views/ProjectsView";
 import NotesView from "@/components/views/NotesView";
 import ActivityView from "@/components/views/ActivityView";
 import ListView from "@/components/views/ListView";
+import BudgetView from "@/components/views/BudgetView";
 import { AuthUser, clearSession, getSessionUser, saveSessionUser } from "@/lib/auth";
 import { mockTasks, mockPhases, mockProjects, mockMilestones } from "@/lib/mockData";
 import { Task, Phase, Project, Milestone, Notification } from "@/types";
@@ -24,7 +25,7 @@ import { Task, Phase, Project, Milestone, Notification } from "@/types";
  * Habilita multi-proyectos, informes y aprobaciones administrativas.
  */
 
-type Tab = "gantt" | "board" | "calendar" | "reports" | "users_Gantt" | "Projects_Gantt" | "Notes_Gantt" | "activity" | "list";
+type Tab = "gantt" | "board" | "calendar" | "reports" | "users_Gantt" | "Projects_Gantt" | "Notes_Gantt" | "activity" | "list" | "budget";
 
 const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: "Projects_Gantt",  label: "Proyectos",         icon: <Briefcase size={15} /> },
@@ -34,7 +35,7 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: "calendar",  label: "Calendario",        icon: <Calendar size={15} /> },
   { id: "reports",   label: "Informes",          icon: <BarChart2 size={15} /> },
   { id: "Notes_Gantt",     label: "Notas",             icon: <StickyNote size={15} /> },
-  { id: "activity",  label: "Actividad",         icon: <Activity size={15} /> },
+  { id: "budget",    label: "Presupuesto",        icon: <DollarSign size={15} /> },
   { id: "users_Gantt",     label: "Personas",          icon: <Users size={15} /> },
 ];
 
@@ -1163,10 +1164,13 @@ export default function Home() {
             activeProjectId={activeProjectId}
           />
         )}
-        {activeTab === "activity" && (
-          <ActivityView
+        {activeTab === "budget" && (
+          <BudgetView
+            Tasks_Gantt={projectTasks}
+            setTasks={handleSetTasks}
+            Projects_Gantt={Projects_Gantt}
             users_Gantt={users_Gantt}
-            currentUser={user}
+            activeProjectId={activeProj.id}
           />
         )}
         {activeTab === "list" && (
