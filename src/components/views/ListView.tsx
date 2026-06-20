@@ -786,93 +786,136 @@ export default function ListView({
         return (
           <div
             ref={popoverRef}
-            className="fixed z-50 bg-[#1a1d27] border border-[#2e3352] rounded-xl shadow-2xl shadow-black/60 overflow-hidden flex flex-col"
-            style={{ top: checklistPopover.top, left: Math.min(checklistPopover.left, window.innerWidth - 580), width: 560, maxHeight: "82vh" }}
+            className="fixed z-50 flex flex-col overflow-hidden rounded-2xl shadow-[0_24px_64px_rgba(0,0,0,0.6)]"
+            style={{
+              top: checklistPopover.top,
+              left: Math.min(checklistPopover.left, window.innerWidth - 620),
+              width: 600,
+              maxHeight: "84vh",
+              background: "linear-gradient(160deg,#1e2235 0%,#161928 100%)",
+              border: "1px solid rgba(79,124,255,0.18)",
+            }}
           >
+            {/* Línea de acento superior */}
+            <div className="h-[3px] w-full flex-shrink-0" style={{ background: "linear-gradient(90deg,#4f7cff,#7c5fff,#3ecf8e)" }} />
 
-            {/* ── TÍTULO DEL PROCESO ── */}
-            <div className="px-4 pt-3 pb-3 border-b border-[#2e3352] flex-shrink-0">
-              <div className="flex items-center justify-between gap-3 mb-2">
-                <div className="min-w-0">
-                  <p className="text-[9px] text-[#8b93b8] uppercase tracking-widest font-semibold mb-0.5">Checklist de verificación</p>
-                  <p className="text-[13px] font-bold text-[#e8eaf6] truncate">{task.title}</p>
+            {/* ── CABECERA ── */}
+            <div className="px-5 pt-4 pb-4 flex-shrink-0" style={{ borderBottom: "1px solid rgba(46,51,82,0.8)" }}>
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0 flex-1">
+                  <p className="text-[9px] text-[#4f7cff] uppercase tracking-[0.18em] font-bold mb-1">Checklist de verificación</p>
+                  <p className="text-[15px] font-bold text-white leading-tight truncate">{task.title}</p>
                 </div>
-                <div className="flex items-center gap-3 flex-shrink-0">
-                  <div className="text-right">
-                    <span className="text-[11px] font-bold" style={{ color: barColor }}>{pct}%</span>
-                    <p className="text-[8px] text-[#8b93b8]">{done}/{items.length} ítems</p>
+                <div className="flex items-center gap-4 flex-shrink-0">
+                  {/* Indicador circular de progreso */}
+                  <div className="relative flex-shrink-0">
+                    <svg width="44" height="44" viewBox="0 0 44 44">
+                      <circle cx="22" cy="22" r="18" fill="none" stroke="#2e3352" strokeWidth="3.5" />
+                      <circle cx="22" cy="22" r="18" fill="none" stroke={barColor} strokeWidth="3.5"
+                        strokeDasharray={`${(pct / 100) * 113} 113`}
+                        strokeLinecap="round"
+                        transform="rotate(-90 22 22)"
+                        style={{ transition: "stroke-dasharray 0.5s ease" }}
+                      />
+                    </svg>
+                    <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold" style={{ color: barColor }}>{pct}%</span>
                   </div>
-                  <button onClick={() => setChecklistPopover(null)} className="text-[#8b93b8] hover:text-white transition-colors">
+                  <div className="text-right">
+                    <p className="text-[12px] font-bold text-white">{done}<span className="text-[#8b93b8] font-normal">/{items.length}</span></p>
+                    <p className="text-[9px] text-[#8b93b8]">completados</p>
+                  </div>
+                  <button onClick={() => setChecklistPopover(null)}
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-[#8b93b8] hover:text-white hover:bg-white/10 transition-all">
                     <X size={14} />
                   </button>
                 </div>
               </div>
-              <div className="h-1.5 rounded-full bg-[#0f1117] overflow-hidden">
-                <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, backgroundColor: barColor }} />
+
+              {/* Barra de progreso lineal */}
+              <div className="mt-3.5 h-[3px] rounded-full overflow-hidden" style={{ background: "rgba(46,51,82,0.8)" }}>
+                <div className="h-full rounded-full transition-all duration-500"
+                  style={{ width: `${pct}%`, background: pct === 100 ? "#3ecf8e" : "linear-gradient(90deg,#4f7cff,#7c5fff)" }} />
               </div>
+
               {noOk > 0 && (
-                <p className="text-[9px] text-[#ff5c5c] mt-1.5 font-medium">{noOk} ítem{noOk !== 1 ? "s" : ""} marcado{noOk !== 1 ? "s" : ""} como No cumplido</p>
+                <div className="mt-2 flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#ff5c5c]" />
+                  <p className="text-[9px] text-[#ff5c5c] font-semibold">{noOk} ítem{noOk !== 1 ? "s" : ""} marcado{noOk !== 1 ? "s" : ""} como No cumplido</p>
+                </div>
               )}
             </div>
 
-            {/* ── ENCABEZADO TABLA ── */}
-            <div className="grid bg-[#0f1117] border-b border-[#2e3352] flex-shrink-0"
-              style={{ gridTemplateColumns: "28px 1fr 90px 150px 28px" }}>
-              <div className="px-2 py-1.5 text-[9px] font-bold text-[#8b93b8] uppercase tracking-wider text-center">#</div>
-              <div className="px-2 py-1.5 text-[9px] font-bold text-[#8b93b8] uppercase tracking-wider">Ítem a verificar</div>
-              <div className="px-2 py-1.5 text-[9px] font-bold text-[#8b93b8] uppercase tracking-wider text-center">Verificado</div>
-              <div className="px-2 py-1.5 text-[9px] font-bold text-[#8b93b8] uppercase tracking-wider">Observaciones</div>
+            {/* ── ENCABEZADO DE COLUMNAS ── */}
+            <div className="grid flex-shrink-0 px-1"
+              style={{ gridTemplateColumns: "40px 1fr 100px 170px 36px", background: "rgba(15,17,23,0.6)", borderBottom: "1px solid rgba(46,51,82,0.6)" }}>
+              <div className="px-3 py-2 text-[8.5px] font-bold text-[#4f7cff] uppercase tracking-widest text-center">#</div>
+              <div className="px-3 py-2 text-[8.5px] font-bold text-[#4f7cff] uppercase tracking-widest">Ítem a verificar</div>
+              <div className="px-3 py-2 text-[8.5px] font-bold text-[#4f7cff] uppercase tracking-widest text-center">Verificado</div>
+              <div className="px-3 py-2 text-[8.5px] font-bold text-[#4f7cff] uppercase tracking-widest">Observaciones</div>
               <div />
             </div>
 
-            {/* ── ÍTEMS ── */}
-            <div className="flex-1 overflow-y-auto min-h-0 divide-y divide-[#2e3352]/40">
+            {/* ── FILAS DE ÍTEMS ── */}
+            <div className="flex-1 overflow-y-auto min-h-0">
               {items.length === 0 && (
-                <div className="flex flex-col items-center py-8 text-[#8b93b8]">
-                  <CheckSquare size={28} className="opacity-20 mb-2" />
-                  <p className="text-[11px] italic">Sin ítems — agrega el primero abajo</p>
+                <div className="flex flex-col items-center py-10 text-[#8b93b8]">
+                  <CheckSquare size={32} className="opacity-10 mb-3" />
+                  <p className="text-[12px] font-medium opacity-60">Sin ítems — agrega el primero</p>
                 </div>
               )}
 
               {items.map((item, idx) => {
-                const s = item.status || (item.done ? "done" : "pending");
+                const s         = item.status || (item.done ? "done" : "pending");
                 const isDone    = s === "done";
                 const isNoCumpl = s === "blocked";
+                const isOdd     = idx % 2 === 1;
 
                 return (
-                  <div key={item.id} className={`grid items-start transition-colors ${isDone ? "bg-[#3ecf8e]/5" : isNoCumpl ? "bg-[#ff5c5c]/5" : "hover:bg-white/[0.015]"}`}
-                    style={{ gridTemplateColumns: "28px 1fr 90px 150px 28px" }}>
+                  <div key={item.id}
+                    className={`grid items-center px-1 group transition-colors ${isDone ? "bg-[#3ecf8e]/[0.06]" : isNoCumpl ? "bg-[#ff5c5c]/[0.06]" : isOdd ? "bg-white/[0.015]" : ""} hover:bg-white/[0.04]`}
+                    style={{ gridTemplateColumns: "40px 1fr 100px 170px 36px", borderBottom: "1px solid rgba(46,51,82,0.3)", minHeight: 46 }}>
 
                     {/* Número */}
-                    <div className="px-2 py-2 text-[10px] text-[#8b93b8] text-center font-mono pt-2.5">{idx + 1}</div>
+                    <div className="px-3 text-center">
+                      <span className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[9px] font-bold"
+                        style={{
+                          background: isDone ? "rgba(62,207,142,0.15)" : isNoCumpl ? "rgba(255,92,92,0.15)" : "rgba(79,124,255,0.12)",
+                          color: isDone ? "#3ecf8e" : isNoCumpl ? "#ff5c5c" : "#4f7cff",
+                        }}>
+                        {idx + 1}
+                      </span>
+                    </div>
 
-                    {/* Descripción del ítem */}
-                    <div className="px-2 py-2">
-                      <span className={`text-[11px] leading-snug block ${isDone ? "line-through text-[#8b93b8]" : isNoCumpl ? "text-[#ff8080]" : "text-[#e8eaf6]"}`}>
+                    {/* Texto del ítem */}
+                    <div className="px-3 py-3">
+                      <span className={`text-[12px] leading-snug ${isDone ? "line-through opacity-50 text-[#8b93b8]" : isNoCumpl ? "text-[#ff9090]" : "text-[#dde1f5]"}`}>
                         {item.text}
                       </span>
                     </div>
 
-                    {/* Casillas ✓ / ✗ */}
-                    <div className="px-2 py-2 flex items-center justify-center gap-2 pt-2.5">
-                      {/* ✓ Cumplido */}
-                      <button
-                        onClick={() => setVerified(item, isDone ? "pending" : "done")}
-                        title="Cumplido"
-                        className={`w-6 h-6 rounded flex items-center justify-center border text-[11px] font-bold transition-all ${isDone ? "bg-[#3ecf8e] border-[#3ecf8e] text-white" : "border-[#2e3352] text-[#8b93b8] hover:border-[#3ecf8e] hover:text-[#3ecf8e]"}`}
-                      >✓</button>
-                      {/* ✗ No cumplido */}
-                      <button
-                        onClick={() => setVerified(item, isNoCumpl ? "pending" : "blocked")}
-                        title="No cumplido"
-                        className={`w-6 h-6 rounded flex items-center justify-center border text-[11px] font-bold transition-all ${isNoCumpl ? "bg-[#ff5c5c] border-[#ff5c5c] text-white" : "border-[#2e3352] text-[#8b93b8] hover:border-[#ff5c5c] hover:text-[#ff5c5c]"}`}
-                      >✗</button>
+                    {/* ✓ / ✗ */}
+                    <div className="px-3 flex items-center justify-center gap-2">
+                      <button onClick={() => setVerified(item, isDone ? "pending" : "done")} title="Cumplido"
+                        className={`w-7 h-7 rounded-lg flex items-center justify-center text-[13px] font-bold transition-all duration-200 ${
+                          isDone
+                            ? "bg-[#3ecf8e] text-white shadow-[0_0_12px_rgba(62,207,142,0.4)]"
+                            : "bg-transparent border border-[#2e3352] text-[#8b93b8] hover:border-[#3ecf8e] hover:text-[#3ecf8e] hover:bg-[#3ecf8e]/10"
+                        }`}>✓</button>
+                      <button onClick={() => setVerified(item, isNoCumpl ? "pending" : "blocked")} title="No cumplido"
+                        className={`w-7 h-7 rounded-lg flex items-center justify-center text-[13px] font-bold transition-all duration-200 ${
+                          isNoCumpl
+                            ? "bg-[#ff5c5c] text-white shadow-[0_0_12px_rgba(255,92,92,0.4)]"
+                            : "bg-transparent border border-[#2e3352] text-[#8b93b8] hover:border-[#ff5c5c] hover:text-[#ff5c5c] hover:bg-[#ff5c5c]/10"
+                        }`}>✗</button>
                     </div>
 
-                    {/* Observaciones — inline */}
-                    <div className="px-2 py-1.5">
+                    {/* Observaciones */}
+                    <div className="px-3">
                       <input
-                        className="w-full bg-transparent text-[10px] text-[#e8eaf6] placeholder-[#2e3352] outline-none border-b border-[#2e3352]/60 focus:border-[#4f7cff]/60 pb-0.5 transition-colors"
+                        className="w-full bg-transparent text-[11px] text-[#c8cde8] placeholder-[#3a4066] outline-none pb-0.5 transition-colors"
+                        style={{ borderBottom: "1px solid rgba(46,51,82,0.6)" }}
+                        onFocus={e => (e.target.style.borderBottomColor = "rgba(79,124,255,0.5)")}
+                        onBlur={e => (e.target.style.borderBottomColor = "rgba(46,51,82,0.6)")}
                         placeholder="Observación..."
                         value={item.notes || ""}
                         onChange={e => setObs(item, e.target.value)}
@@ -880,11 +923,9 @@ export default function ListView({
                     </div>
 
                     {/* Eliminar */}
-                    <div className="flex items-center justify-center py-2">
-                      <button
-                        onClick={() => saveTaskChecklist({ ...task, checklist: task.checklist?.filter(i => i.id !== item.id) })}
-                        className="text-[#2e3352] hover:text-[#ff5c5c] transition-colors"
-                      >
+                    <div className="flex items-center justify-center">
+                      <button onClick={() => saveTaskChecklist({ ...task, checklist: task.checklist?.filter(i => i.id !== item.id) })}
+                        className="opacity-0 group-hover:opacity-100 w-6 h-6 rounded-md flex items-center justify-center text-[#8b93b8] hover:text-[#ff5c5c] hover:bg-[#ff5c5c]/10 transition-all">
                         <Trash2 size={11} />
                       </button>
                     </div>
@@ -894,19 +935,24 @@ export default function ListView({
             </div>
 
             {/* ── AGREGAR ÍTEM ── */}
-            <div className="border-t border-[#2e3352] bg-[#0f1117]/60 px-3 pt-2.5 pb-3 flex-shrink-0">
+            <div className="flex-shrink-0 px-4 py-3" style={{ borderTop: "1px solid rgba(46,51,82,0.8)", background: "rgba(15,17,23,0.5)" }}>
               <div className="flex gap-2 items-center">
-                <input
-                  autoFocus
-                  className="flex-1 bg-[#1a1d27] border border-[#2e3352] focus:border-[#4f7cff]/60 rounded-lg px-3 py-1.5 text-[11px] text-[#e8eaf6] placeholder-[#8b93b8] outline-none transition-colors"
-                  placeholder="Nuevo ítem a verificar... (Enter para agregar)"
-                  value={popoverNewText}
-                  onChange={e => setPopoverNewText(e.target.value)}
-                  onKeyDown={e => { if (e.key === "Enter") addItem(); if (e.key === "Escape") setChecklistPopover(null); }}
-                />
+                <div className="flex-1 flex items-center gap-2 rounded-xl px-3 py-2 transition-all"
+                  style={{ background: "rgba(46,51,82,0.3)", border: "1px solid rgba(46,51,82,0.8)" }}>
+                  <Plus size={13} className="text-[#4f7cff] flex-shrink-0" />
+                  <input
+                    autoFocus
+                    className="flex-1 bg-transparent text-[12px] text-[#e8eaf6] placeholder-[#4a5280] outline-none"
+                    placeholder="Nuevo ítem a verificar... (Enter)"
+                    value={popoverNewText}
+                    onChange={e => setPopoverNewText(e.target.value)}
+                    onKeyDown={e => { if (e.key === "Enter") addItem(); if (e.key === "Escape") setChecklistPopover(null); }}
+                  />
+                </div>
                 <button onClick={addItem} disabled={!popoverNewText.trim()}
-                  className="px-3 py-1.5 rounded-lg bg-[#4f7cff] text-white text-[10px] font-bold hover:bg-[#4f7cff]/80 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex-shrink-0 flex items-center gap-1">
-                  <Plus size={12} /> Agregar
+                  className="px-4 py-2 rounded-xl text-[11px] font-bold text-white transition-all flex-shrink-0 disabled:opacity-30 disabled:cursor-not-allowed"
+                  style={{ background: popoverNewText.trim() ? "linear-gradient(135deg,#4f7cff,#7c5fff)" : "#2e3352" }}>
+                  Agregar
                 </button>
               </div>
             </div>
