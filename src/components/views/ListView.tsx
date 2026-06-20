@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { ChevronUp, ChevronDown, Search, Download, Plus, Trash2, List, CheckSquare } from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { ChevronUp, ChevronDown, Search, Download, Plus, Trash2, List, CheckSquare, Square, X } from "lucide-react";
 import { Task, TaskStatus, TaskPriority, Project, AuthUser } from "@/types";
 
 interface ListViewProps {
@@ -48,6 +48,32 @@ export default function ListView({
   const [editValue, setEditValue]         = useState("");
   const [newRow, setNewRow]               = useState<Partial<Task> | null>(null);
   const [saving, setSaving]               = useState(false);
+  const [checklistPopover, setChecklistPopover] = useState<{ taskId: string; top: number; left: number } | null>(null);
+  const [popoverNewText, setPopoverNewText]     = useState("");
+  const popoverRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!checklistPopover) return;
+    function handler(e: MouseEvent) {
+      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+        setChecklistPopover(null);
+        setPopoverNewText("");
+      }
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [checklistPopover]);
+
+  async function saveTaskChecklist(updated: Task) {
+    setTasks(prev => prev.map(t => t.id === updated.id ? updated : t));
+    try {
+      await fetch("/api/tasks", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(updated) });
+    } catch (e) { console.error(e); }
+  }
+
+  function popoverTask() {
+    return checklistPopover ? Tasks_Gantt.find(t => t.id === checklistPopover.taskId) : null;
+  }
 
   // ── Helpers ────────────────────────────────────────────────────────────
   const isEditing = (taskId: string, field: string) =>
@@ -513,23 +539,35 @@ export default function ListView({
                     )}
                   </td>
 
-                  {/* Checklist */}
+                  {/* Checklist — abre popover al clic */}
                   <td className="px-3 py-2">
                     {(() => {
                       const items = task.checklist || [];
-                      if (items.length === 0) return <span className="text-[#2e3352]">—</span>;
-                      const done = items.filter(i => i.done).length;
-                      const pct  = Math.round((done / items.length) * 100);
+                      const done  = items.filter(i => i.done).length;
+                      const total = items.length;
+                      const pct   = total > 0 ? Math.round((done / total) * 100) : 0;
                       const color = pct === 100 ? "#3ecf8e" : pct > 0 ? "#f5a623" : "#8b93b8";
                       return (
-                        <div className="flex items-center gap-2">
-                          <div className="w-12 h-1.5 rounded-full bg-[#2e3352] overflow-hidden">
-                            <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: color }} />
-                          </div>
-                          <span className="text-[10px] font-semibold tabular-nums" style={{ color }}>
-                            {done}/{items.length}
-                          </span>
-                        </div>
+                        <button
+                          onClick={e => {
+                            e.stopPropagation();
+                            const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
+                            setChecklistPopover({ taskId: task.id, top: rect.bottom + 6, left: rect.left });
+                            setPopoverNewText("");
+                          }}
+                          className="flex items-center gap-2 hover:opacity-80 transition-opacity cursor-pointer"
+                        >
+                          {total === 0 ? (
+                            <span className="text-[10px] text-[#8b93b8] hover:text-[#4f7cff] transition-colors">+ Agregar</span>
+                          ) : (
+                            <>
+                              <div className="w-12 h-1.5 rounded-full bg-[#2e3352] overflow-hidden">
+                                <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, backgroundColor: color }} />
+                              </div>
+                              <span className="text-[10px] font-semibold tabular-nums" style={{ color }}>{done}/{total}</span>
+                            </>
+                          )}
+                        </button>
                       );
                     })()}
                   </td>
@@ -678,6 +716,98 @@ export default function ListView({
           </div>
         )}
       </div>
+
+      {/* ── Popover de Checklist ── */}
+      {checklistPopover && (() => {
+        const task = popoverTask();
+        if (!task) return null;
+        const items = task.checklist || [];
+        const done  = items.filter(i => i.done).length;
+        const pct   = items.length > 0 ? Math.round((done / items.length) * 100) : 0;
+        const color = pct === 100 ? "#3ecf8e" : pct > 0 ? "#f5a623" : "#8b93b8";
+
+        return (
+          <div
+            ref={popoverRef}
+            className="fixed z-50 w-72 bg-[#1a1d27] border border-[#2e3352] rounded-xl shadow-2xl shadow-black/40 overflow-hidden"
+            style={{ top: checklistPopover.top, left: Math.min(checklistPopover.left, window.innerWidth - 300) }}
+          >
+            {/* Cabecera */}
+            <div className="flex items-center justify-between px-3 py-2.5 border-b border-[#2e3352]">
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] font-bold text-[#e8eaf6] truncate">{task.title}</p>
+                {items.length > 0 && (
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="flex-1 h-1 rounded-full bg-[#2e3352] overflow-hidden">
+                      <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
+                    </div>
+                    <span className="text-[9px] font-bold" style={{ color }}>{done}/{items.length}</span>
+                  </div>
+                )}
+              </div>
+              <button onClick={() => { setChecklistPopover(null); setPopoverNewText(""); }}
+                className="ml-2 text-[#8b93b8] hover:text-white transition-colors flex-shrink-0">
+                <X size={13} />
+              </button>
+            </div>
+
+            {/* Lista de pasos */}
+            <div className="max-h-56 overflow-y-auto px-3 py-2 space-y-1">
+              {items.length === 0 && (
+                <p className="text-[10px] text-[#8b93b8] text-center py-3 italic">Sin pasos aún — agrega uno abajo</p>
+              )}
+              {items.map(item => (
+                <div key={item.id} className="flex items-center gap-2 py-1 group">
+                  <button
+                    onClick={() => saveTaskChecklist({ ...task, checklist: task.checklist?.map(i => i.id === item.id ? { ...i, done: !i.done } : i) })}
+                    className="flex-shrink-0 text-[#8b93b8] hover:text-[#4f7cff] transition-colors"
+                  >
+                    {item.done ? <CheckSquare size={13} className="text-[#3ecf8e]" /> : <Square size={13} />}
+                  </button>
+                  <span className={`flex-1 text-[11px] leading-tight ${item.done ? "line-through text-[#8b93b8]" : "text-[#e8eaf6]"}`}>
+                    {item.text}
+                  </span>
+                  <button
+                    onClick={() => saveTaskChecklist({ ...task, checklist: task.checklist?.filter(i => i.id !== item.id) })}
+                    className="opacity-0 group-hover:opacity-100 text-[#ff5c5c] transition-all"
+                  >
+                    <Trash2 size={10} />
+                  </button>
+                </div>
+              ))}
+            </div>
+
+            {/* Input para agregar */}
+            <div className="px-3 py-2 border-t border-[#2e3352] flex items-center gap-2">
+              <input
+                autoFocus
+                className="flex-1 bg-transparent text-[11px] text-[#e8eaf6] placeholder-[#8b93b8] outline-none"
+                placeholder="Agregar paso... (Enter)"
+                value={popoverNewText}
+                onChange={e => setPopoverNewText(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === "Enter" && popoverNewText.trim()) {
+                    saveTaskChecklist({ ...task, checklist: [...items, { id: `chk_${Date.now()}`, text: popoverNewText.trim(), done: false }] });
+                    setPopoverNewText("");
+                  }
+                  if (e.key === "Escape") { setChecklistPopover(null); setPopoverNewText(""); }
+                }}
+              />
+              {popoverNewText.trim() && (
+                <button
+                  onClick={() => {
+                    saveTaskChecklist({ ...task, checklist: [...items, { id: `chk_${Date.now()}`, text: popoverNewText.trim(), done: false }] });
+                    setPopoverNewText("");
+                  }}
+                  className="text-[#4f7cff] hover:text-white text-[10px] font-bold transition-colors"
+                >
+                  <Plus size={14} />
+                </button>
+              )}
+            </div>
+          </div>
+        );
+      })()}
     </div>
   );
 }
