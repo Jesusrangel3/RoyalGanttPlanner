@@ -15,7 +15,7 @@ export async function GET(request: Request) {
   try {
     const result = await executeQuery(`
       SELECT c.id, c.taskId, c.userId, u.name AS userName, u.color AS userColor, c.content, c.createdAt
-      FROM TaskComments_Gantt c JOIN users_Gantt u ON c.userId = u.id
+      FROM Comentarios_Gantt c JOIN Usuarios_Gantt u ON c.userId = u.id
       WHERE c.taskId = @taskId ORDER BY c.createdAt ASC
     `, { taskId: { type: sql.NVarChar, value: taskId } });
 
@@ -49,7 +49,7 @@ export async function POST(request: Request) {
 
     // 1. Insertar en la base de datos
     await executeQuery(`
-      INSERT INTO TaskComments_Gantt (id, taskId, userId, content, createdAt)
+      INSERT INTO Comentarios_Gantt (id, taskId, userId, content, createdAt)
       VALUES (@id, @taskId, @userId, @content, GETDATE())
     `, {
       id: { type: sql.NVarChar, value: id },
@@ -59,7 +59,7 @@ export async function POST(request: Request) {
     });
 
     // 2. Recuperar detalles del usuario creador para responder con su nombre y color
-    const userResult = await executeQuery('SELECT name, color FROM users_Gantt WHERE id = @id', {
+    const userResult = await executeQuery('SELECT name, color FROM Usuarios_Gantt WHERE id = @id', {
       id: { type: sql.NVarChar, value: userId }
     });
     

@@ -15,7 +15,7 @@ export async function GET(request: Request) {
   const limit = parseInt(searchParams.get('limit') || '100');
 
   try {
-    let query = 'SELECT TOP (@limit) id, userId, userName, action, entityType, entityId, entityTitle, details, createdAt FROM ActivityLog_Gantt';
+    let query = 'SELECT TOP (@limit) id, userId, userName, action, entityType, entityId, entityTitle, details, createdAt FROM Actividad_Gantt';
     const params: any = { limit: { type: sql.Int, value: limit } };
     const conditions: string[] = [];
 
@@ -50,11 +50,11 @@ export async function POST(request: Request) {
     const body = await request.json() as Partial<ActivityLog_Gantt>;
     const id = 'log_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
 
-    const userRes = await executeQuery('SELECT name FROM users_Gantt WHERE id = @uid', { uid: { type: sql.NVarChar, value: sessionUser.id } });
+    const userRes = await executeQuery('SELECT name FROM Usuarios_Gantt WHERE id = @uid', { uid: { type: sql.NVarChar, value: sessionUser.id } });
     const userName = userRes.recordset[0]?.name || sessionUser.email;
 
     await executeQuery(`
-      INSERT INTO ActivityLog_Gantt (id, userId, userName, action, entityType, entityId, entityTitle, details, createdAt)
+      INSERT INTO Actividad_Gantt (id, userId, userName, action, entityType, entityId, entityTitle, details, createdAt)
       VALUES (@id, @userId, @userName, @action, @entityType, @entityId, @entityTitle, @details, GETDATE())
     `, {
       id: { type: sql.NVarChar, value: id },

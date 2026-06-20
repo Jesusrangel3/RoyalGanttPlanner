@@ -10,7 +10,7 @@ export async function GET() {
   if (!sessionUser) return NextResponse.json({ success: false, error: 'No autorizado.' }, { status: 401 });
 
   try {
-    const result = await executeQuery('SELECT * FROM WorkloadConfig_Gantt');
+    const result = await executeQuery('SELECT * FROM ConfigCarga_Gantt');
     const config: Record<string, number> = {};
     result.recordset.forEach((row: any) => { config[row.configKey] = Number(row.configValue); });
     return NextResponse.json({ success: true, config });
@@ -31,7 +31,7 @@ export async function PUT(request: Request) {
     }
 
     await executeQuery(`
-      UPDATE WorkloadConfig_Gantt SET configValue=@v, updatedAt=GETDATE() WHERE configKey=@k
+      UPDATE ConfigCarga_Gantt SET configValue=@v, updatedAt=GETDATE() WHERE configKey=@k
     `, {
       k: { type: sql.NVarChar, value: configKey },
       v: { type: sql.Int,      value: Number(configValue) },

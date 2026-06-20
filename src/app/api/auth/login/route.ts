@@ -34,7 +34,7 @@ export async function POST(request: Request) {
     // Buscar el usuario en la base de datos
     const result = await executeQuery(
       `SELECT id, name, email, initials, color, role, contractType, status, imageUrl, password, availableHours, skills, mustChangePassword, loginAttempts, lockoutUntil 
-       FROM users_Gantt 
+       FROM Usuarios_Gantt 
        WHERE email = @email`,
       { email: { type: sql.NVarChar, value: normalizedEmail } }
     );
@@ -83,7 +83,7 @@ export async function POST(request: Request) {
       }
       
       await executeQuery(
-        `UPDATE users_Gantt 
+        `UPDATE Usuarios_Gantt 
          SET loginAttempts = @attempts, 
              lockoutUntil = @lockoutUntil 
          WHERE id = @id`,
@@ -100,7 +100,7 @@ export async function POST(request: Request) {
     // Restablecer intentos fallidos al iniciar sesión con éxito
     if (dbUser.loginAttempts > 0 || dbUser.lockoutUntil) {
       await executeQuery(
-        `UPDATE users_Gantt 
+        `UPDATE Usuarios_Gantt 
          SET loginAttempts = 0, 
              lockoutUntil = NULL 
          WHERE id = @id`,

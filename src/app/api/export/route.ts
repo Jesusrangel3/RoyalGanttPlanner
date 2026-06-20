@@ -36,10 +36,10 @@ export async function GET(request: Request) {
                t.startDate, t.endDate, t.estimatedHours, t.actualHours,
                t.estimatedBudget, t.actualCost, t.notes,
                u.name AS assignee, p.name AS project, ph.name AS phase
-        FROM Tasks_Gantt t
-        JOIN users_Gantt u    ON t.assigneeId = u.id
-        JOIN Projects_Gantt p ON t.projectId  = p.id
-        JOIN Phases_Gantt ph  ON t.phaseId    = ph.id
+        FROM Tareas_Gantt t
+        JOIN Usuarios_Gantt u    ON t.assigneeId = u.id
+        JOIN Proyectos_Gantt p ON t.projectId  = p.id
+        JOIN Fases_Gantt ph  ON t.phaseId    = ph.id
         WHERE ${where}
         ORDER BY t.startDate, t.title
       `, params);
@@ -60,7 +60,7 @@ export async function GET(request: Request) {
       const r = await executeQuery(`
         SELECT id, name, email, role, contractType, status, availableHours, totalAssignedHours,
                skills, createdAt
-        FROM users_Gantt
+        FROM Usuarios_Gantt
         ORDER BY name
       `);
 
@@ -89,10 +89,10 @@ export async function GET(request: Request) {
       const r = await executeQuery(`
         SELECT te.id, te.date, te.hours, te.description,
                u.name AS userName, t.title AS taskTitle, p.name AS projectName
-        FROM TimeEntries_Gantt te
-        JOIN users_Gantt u    ON te.userId = u.id
-        JOIN Tasks_Gantt t    ON te.taskId = t.id
-        JOIN Projects_Gantt p ON t.projectId = p.id
+        FROM Horas_Gantt te
+        JOIN Usuarios_Gantt u    ON te.userId = u.id
+        JOIN Tareas_Gantt t    ON te.taskId = t.id
+        JOIN Proyectos_Gantt p ON t.projectId = p.id
         WHERE ${where}
         ORDER BY te.date DESC
       `, params);

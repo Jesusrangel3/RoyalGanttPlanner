@@ -28,7 +28,7 @@ export async function POST(request: Request) {
 
     // Validar si el correo institucional ya existe
     const existingCheck = await executeQuery(
-      'SELECT COUNT(*) as count FROM users_Gantt WHERE email = @email',
+      'SELECT COUNT(*) as count FROM Usuarios_Gantt WHERE email = @email',
       { email: { type: sql.NVarChar, value: normalizedEmail } }
     );
 
@@ -45,7 +45,7 @@ export async function POST(request: Request) {
       .slice(0, 2);
 
     // Obtener paleta de colores para asignar uno
-    const countCheck = await executeQuery('SELECT COUNT(*) as count FROM users_Gantt');
+    const countCheck = await executeQuery('SELECT COUNT(*) as count FROM Usuarios_Gantt');
     const userCount = countCheck.recordset[0].count;
     const colorPalette = ['#4f7cff', '#7c5cfc', '#3ecf8e', '#f5a623', '#ff5c5c', '#38bdf8', '#e879f9', '#fb923c'];
     const color = colorPalette[userCount % colorPalette.length];
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
     const status = (normalizedEmail === 'renedejesusrangel228@gmail.com' || isPM) ? 'active' : 'pending';
 
     await executeQuery(`
-      INSERT INTO users_Gantt (id, name, email, initials, color, role, contractType, status, password, imageUrl, availableHours, totalAssignedHours, skills)
+      INSERT INTO Usuarios_Gantt (id, name, email, initials, color, role, contractType, status, password, imageUrl, availableHours, totalAssignedHours, skills)
       VALUES (@id, @name, @email, @initials, @color, @role, @contractType, @status, @password, @imageUrl, 40, 0, @skills)
     `, {
       id: { type: sql.NVarChar, value: userId },

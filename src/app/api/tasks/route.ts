@@ -13,8 +13,8 @@ export async function GET() {
       return NextResponse.json({ success: false, error: 'No autorizado. Por favor inicie sesión.' }, { status: 401 });
     }
 
-    const tasksResult = await executeQuery('SELECT * FROM Tasks_Gantt ORDER BY boardOrder ASC');
-    const assigneesResult = await executeQuery('SELECT taskId, userId FROM TaskAssignees_Gantt');
+    const tasksResult = await executeQuery('SELECT * FROM Tareas_Gantt ORDER BY boardOrder ASC');
+    const assigneesResult = await executeQuery('SELECT taskId, userId FROM Asignaciones_Gantt');
     
     const assigneesMap: Record<string, string[]> = {};
     assigneesResult.recordset.forEach(a => {
@@ -99,7 +99,7 @@ export async function POST(request: Request) {
     requestTask.input('checklist', sql.NVarChar, JSON.stringify(task.checklist || []));
 
     await requestTask.query(`
-      INSERT INTO Tasks_Gantt (
+      INSERT INTO Tareas_Gantt (
         id, title, phaseId, projectId, milestoneId, startDate, endDate, status, progress,
         assigneeId, notes, estimatedHours, actualHours, requiredSkills, estimatedBudget, actualCost, materials, dependsOnTaskId, createdBy, accepted, boardOrder, priority, checklist
       )
@@ -116,7 +116,7 @@ export async function POST(request: Request) {
       requestAssignee.input('taskId', sql.NVarChar, task.id);
       requestAssignee.input('userId', sql.NVarChar, uid);
       await requestAssignee.query(`
-        INSERT INTO TaskAssignees_Gantt (taskId, userId)
+        INSERT INTO Asignaciones_Gantt (taskId, userId)
         VALUES (@taskId, @userId)
       `);
     }
@@ -186,7 +186,7 @@ export async function PUT(request: Request) {
     requestTask.input('checklist', sql.NVarChar, JSON.stringify(task.checklist || []));
 
     await requestTask.query(`
-      UPDATE Tasks_Gantt
+      UPDATE Tareas_Gantt
       SET title = @title, phaseId = @phaseId, projectId = @projectId, milestoneId = @milestoneId,
           startDate = @startDate, endDate = @endDate, status = @status, progress = @progress,
           assigneeId = @assigneeId, notes = @notes, estimatedHours = @estimatedHours, actualHours = @actualHours,
@@ -199,7 +199,7 @@ export async function PUT(request: Request) {
     // 3. Limpiar asignaciones viejas y guardar las nuevas
     const requestClean = new sql.Request(transaction);
     requestClean.input('taskId', sql.NVarChar, task.id);
-    await requestClean.query('DELETE FROM TaskAssignees_Gantt WHERE taskId = @taskId');
+    await requestClean.query('DELETE FROM Asignaciones_Gantt WHERE taskId = @taskId');
 
     const assigneeIds = task.assigneeIds && task.assigneeIds.length > 0 ? task.assigneeIds : [task.assigneeId];
     for (const uid of assigneeIds) {
@@ -207,7 +207,7 @@ export async function PUT(request: Request) {
       requestAssignee.input('taskId', sql.NVarChar, task.id);
       requestAssignee.input('userId', sql.NVarChar, uid);
       await requestAssignee.query(`
-        INSERT INTO TaskAssignees_Gantt (taskId, userId)
+        INSERT INTO Asignaciones_Gantt (taskId, userId)
         VALUES (@taskId, @userId)
       `);
     }
@@ -236,7 +236,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ success: false, error: 'Se requiere el parámetro ID para eliminar.' }, { status: 400 });
     }
 
-    await executeQuery('DELETE FROM Tasks_Gantt WHERE id = @id', {
+    await executeQuery('DELETE FROM Tareas_Gantt WHERE id = @id', {
       id: { type: sql.NVarChar, value: id }
     });
 

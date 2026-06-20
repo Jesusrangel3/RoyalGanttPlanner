@@ -13,7 +13,7 @@ export async function GET() {
       return NextResponse.json({ success: false, error: 'No autorizado. Por favor inicie sesión.' }, { status: 401 });
     }
 
-    const result = await executeQuery('SELECT id, projectId, name, targetDate, description, status FROM Milestones_Gantt');
+    const result = await executeQuery('SELECT id, projectId, name, targetDate, description, status FROM Hitos_Gantt');
     return NextResponse.json({ success: true, Milestones_Gantt: result.recordset });
   } catch (error: any) {
     console.error('Error al obtener hitos:', error);
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
     }
 
     await executeQuery(`
-      INSERT INTO Milestones_Gantt (id, projectId, name, targetDate, description, status)
+      INSERT INTO Hitos_Gantt (id, projectId, name, targetDate, description, status)
       VALUES (@id, @projectId, @name, @targetDate, @description, @status)
     `, {
       id: { type: sql.NVarChar, value: id },
@@ -77,7 +77,7 @@ export async function PUT(request: Request) {
     }
 
     await executeQuery(`
-      UPDATE Milestones_Gantt
+      UPDATE Hitos_Gantt
       SET projectId = @projectId, name = @name, targetDate = @targetDate, description = @description, status = @status
       WHERE id = @id
     `, {
@@ -114,7 +114,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ success: false, error: 'Se requiere el parámetro ID para eliminar.' }, { status: 400 });
     }
 
-    await executeQuery('DELETE FROM Milestones_Gantt WHERE id = @id', {
+    await executeQuery('DELETE FROM Hitos_Gantt WHERE id = @id', {
       id: { type: sql.NVarChar, value: id }
     });
 

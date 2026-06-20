@@ -30,10 +30,10 @@ export async function GET(request: Request) {
       const r = await executeQuery(`
         SELECT TOP 20 t.id, t.title, t.status, t.priority, t.startDate, t.endDate, t.progress,
                p.name AS projectName, ph.name AS phaseName, u.name AS assigneeName
-        FROM Tasks_Gantt t
-        JOIN Projects_Gantt p  ON t.projectId = p.id
-        JOIN Phases_Gantt ph   ON t.phaseId   = ph.id
-        JOIN users_Gantt u     ON t.assigneeId = u.id
+        FROM Tareas_Gantt t
+        JOIN Proyectos_Gantt p  ON t.projectId = p.id
+        JOIN Fases_Gantt ph   ON t.phaseId   = ph.id
+        JOIN Usuarios_Gantt u     ON t.assigneeId = u.id
         WHERE t.title LIKE @term OR t.notes LIKE @term
         ORDER BY t.updatedAt DESC, t.createdAt DESC
       `, { term: { type: sql.NVarChar, value: term } });
@@ -44,7 +44,7 @@ export async function GET(request: Request) {
     if (types.includes('Projects_Gantt')) {
       const r = await executeQuery(`
         SELECT TOP 10 id, name, description, status, startDate, endDate
-        FROM Projects_Gantt
+        FROM Proyectos_Gantt
         WHERE name LIKE @term OR description LIKE @term
         ORDER BY name
       `, { term: { type: sql.NVarChar, value: term } });
@@ -55,7 +55,7 @@ export async function GET(request: Request) {
     if (types.includes('Notes_Gantt')) {
       const r = await executeQuery(`
         SELECT TOP 10 id, title, content, color, pinned, isShared, createdAt
-        FROM Notes_Gantt
+        FROM Notas_Gantt
         WHERE (userId = @userId OR isShared = 1) AND (title LIKE @term OR content LIKE @term OR tags LIKE @term)
         ORDER BY pinned DESC, updatedAt DESC
       `, {
@@ -71,7 +71,7 @@ export async function GET(request: Request) {
       if (isPM) {
         const r = await executeQuery(`
           SELECT TOP 10 id, name, email, role, contractType, status, initials, color
-          FROM users_Gantt
+          FROM Usuarios_Gantt
           WHERE name LIKE @term OR email LIKE @term OR role LIKE @term
           ORDER BY name
         `, { term: { type: sql.NVarChar, value: term } });

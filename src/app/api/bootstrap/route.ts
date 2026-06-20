@@ -16,7 +16,7 @@ export async function GET() {
     // 1. Obtener usuarios (sin contraseñas)
     const usersResult = await executeQuery(`
       SELECT id, name, email, initials, color, role, contractType, status, imageUrl, availableHours, totalAssignedHours, skills 
-      FROM users_Gantt
+      FROM Usuarios_Gantt
     `);
     const users: User[] = usersResult.recordset.map(u => ({
       ...u,
@@ -26,27 +26,27 @@ export async function GET() {
     // 2. Obtener proyectos
     const Projects_GanttResult = await executeQuery(`
       SELECT id, name, description, startDate, endDate, status, leaderId 
-      FROM Projects_Gantt
+      FROM Proyectos_Gantt
     `);
     const Projects_Gantt: Project[] = Projects_GanttResult.recordset;
 
     // 3. Obtener fases
     const Phases_GanttResult = await executeQuery(`
       SELECT id, name, color, projectId 
-      FROM Phases_Gantt
+      FROM Fases_Gantt
     `);
     const Phases_Gantt: Phase[] = Phases_GanttResult.recordset;
 
     // 4. Obtener hitos (Milestones_Gantt)
     const Milestones_GanttResult = await executeQuery(`
       SELECT id, projectId, name, targetDate, description, status 
-      FROM Milestones_Gantt
+      FROM Hitos_Gantt
     `);
     const Milestones_Gantt: Milestone[] = Milestones_GanttResult.recordset;
 
     // 5. Obtener asignaciones múltiples
     const assigneesResult = await executeQuery(`
-      SELECT taskId, userId FROM TaskAssignees_Gantt
+      SELECT taskId, userId FROM Asignaciones_Gantt
     `);
     const assigneesMap: Record<string, string[]> = {};
     assigneesResult.recordset.forEach(a => {
@@ -59,8 +59,8 @@ export async function GET() {
     // 6. Obtener comentarios
     const commentsResult = await executeQuery(`
       SELECT c.id, c.taskId, c.userId, u.name as userName, u.color as userColor, c.content, c.createdAt
-      FROM TaskComments_Gantt c 
-      JOIN users_Gantt u ON c.userId = u.id 
+      FROM Comentarios_Gantt c
+      JOIN Usuarios_Gantt u ON c.userId = u.id
       ORDER BY c.createdAt ASC
     `);
     const commentsMap: Record<string, TaskComment[]> = {};
@@ -82,7 +82,7 @@ export async function GET() {
     // 7. Obtener tareas
     const tasksResult = await executeQuery(`
       SELECT id, title, phaseId, projectId, milestoneId, startDate, endDate, status, progress, assigneeId, notes, estimatedHours, actualHours, requiredSkills, estimatedBudget, actualCost, materials, dependsOnTaskId, accepted 
-      FROM Tasks_Gantt
+      FROM Tareas_Gantt
     `);
     const tasks: Task[] = tasksResult.recordset.map(t => ({
       ...t,
@@ -98,7 +98,7 @@ export async function GET() {
     // 8. Obtener notificaciones
     const Notifications_GanttResult = await executeQuery(`
       SELECT id, userId, title, message, type, taskId, [read], createdAt 
-      FROM Notifications_Gantt
+      FROM Notificaciones_Gantt
       ORDER BY createdAt DESC
     `);
     const Notifications_Gantt: Notification[] = Notifications_GanttResult.recordset.map(n => ({

@@ -25,8 +25,8 @@ export async function GET(request: Request) {
 
     const result = await executeQuery(`
       SELECT id, userId, title, message, type, taskId, [read], createdAt 
-      FROM Notifications_Gantt 
-      WHERE userId = @userId 
+      FROM Notificaciones_Gantt
+      WHERE userId = @userId
       ORDER BY createdAt DESC
     `, {
       userId: { type: sql.NVarChar, value: userId }
@@ -66,7 +66,7 @@ export async function POST(request: Request) {
     }
 
     await executeQuery(`
-      INSERT INTO Notifications_Gantt (id, userId, title, message, type, taskId, [read], createdAt)
+      INSERT INTO Notificaciones_Gantt (id, userId, title, message, type, taskId, [read], createdAt)
       VALUES (@id, @userId, @title, @message, @type, @taskId, @read, GETDATE())
     `, {
       id: { type: sql.NVarChar, value: id },
@@ -98,7 +98,7 @@ export async function PUT(request: Request) {
 
     if (id) {
       await executeQuery(`
-        UPDATE Notifications_Gantt
+        UPDATE Notificaciones_Gantt
         SET [read] = @read
         WHERE id = @id AND userId = @userId
       `, {
@@ -112,7 +112,7 @@ export async function PUT(request: Request) {
       }
 
       await executeQuery(`
-        UPDATE Notifications_Gantt
+        UPDATE Notificaciones_Gantt
         SET [read] = @read
         WHERE userId = @userId
       `, {
@@ -149,7 +149,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ success: false, error: 'Acceso denegado. No puede eliminar notificaciones de otro usuario.' }, { status: 403 });
     }
 
-    await executeQuery('DELETE FROM Notifications_Gantt WHERE userId = @userId', {
+    await executeQuery('DELETE FROM Notificaciones_Gantt WHERE userId = @userId', {
       userId: { type: sql.NVarChar, value: userId }
     });
 

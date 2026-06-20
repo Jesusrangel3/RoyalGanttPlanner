@@ -17,7 +17,7 @@ export async function GET() {
 
     const result = await executeQuery(`
       SELECT id, name, email, initials, color, role, contractType, status, imageUrl, availableHours, totalAssignedHours, skills
-      FROM users_Gantt
+      FROM Usuarios_Gantt
     `);
     const users = result.recordset.map(u => ({
       ...u,
@@ -63,7 +63,7 @@ export async function PUT(request: Request) {
 
     // Actualizar campos
     await executeQuery(`
-      UPDATE users_Gantt
+      UPDATE Usuarios_Gantt
       SET name = COALESCE(@name, name),
           role = COALESCE(@role, role),
           contractType = COALESCE(@contractType, contractType),
@@ -109,7 +109,7 @@ export async function POST(request: Request) {
     }
 
     // Check email uniqueness
-    const exists = await executeQuery('SELECT COUNT(*) as c FROM users_Gantt WHERE email = @email', {
+    const exists = await executeQuery('SELECT COUNT(*) as c FROM Usuarios_Gantt WHERE email = @email', {
       email: { type: sql.NVarChar, value: email.trim().toLowerCase() },
     });
     if (exists.recordset[0].c > 0) {
@@ -126,7 +126,7 @@ export async function POST(request: Request) {
     const passwordHash = await bcrypt.hash(tempHash, 10);
 
     await executeQuery(`
-      INSERT INTO users_Gantt (id, name, email, initials, color, role, contractType, status, password, availableHours, skills, mustChangePassword, imageUrl)
+      INSERT INTO Usuarios_Gantt (id, name, email, initials, color, role, contractType, status, password, availableHours, skills, mustChangePassword, imageUrl)
       VALUES (@id, @name, @email, @initials, @color, @role, @contractType, 'active', @password, @availableHours, @skills, 1, @imageUrl)
     `, {
       id: { type: sql.NVarChar, value: id },
@@ -180,7 +180,7 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ success: false, error: 'No es posible eliminarse a sí mismo de la plataforma.' }, { status: 400 });
     }
 
-    await executeQuery('DELETE FROM users_Gantt WHERE id = @id', {
+    await executeQuery('DELETE FROM Usuarios_Gantt WHERE id = @id', {
       id: { type: sql.NVarChar, value: id }
     });
 
