@@ -1181,6 +1181,7 @@ export default function Home() {
             Projects_Gantt={Projects_Gantt}
             users_Gantt={users_Gantt}
             activeProjectId={activeProj.id}
+            theme={theme}
           />
         )}
       </main>
