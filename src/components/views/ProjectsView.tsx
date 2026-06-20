@@ -46,7 +46,7 @@ export default function Projects_GanttView({
   const isPM = currentUser.role === "Project Manager";
 
   function handleCreate() {
-    if (!form.name.trim() || !form.startDate || !form.endDate) return;
+    if (!form.name.trim()) return;
     const newProj: Project = {
       id: "proj" + Date.now(),
       name: form.name.trim(),
@@ -70,7 +70,7 @@ export default function Projects_GanttView({
   }
 
   function handleUpdate() {
-    if (!editingProject || !editingProject.name.trim() || !editingProject.startDate || !editingProject.endDate) return;
+    if (!editingProject || !editingProject.name.trim()) return;
     setProjects_Gantt((prev) =>
       prev.map((p) => (p.id === editingProject.id ? editingProject : p))
     );
@@ -372,24 +372,6 @@ export default function Projects_GanttView({
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] text-[#8b93b8] uppercase tracking-wider">Fecha Inicio</label>
-                  <input
-                    type="date"
-                    className={INPUT}
-                    value={form.startDate}
-                    onChange={(e) => setForm((p) => ({ ...p, startDate: e.target.value }))}
-                  />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] text-[#8b93b8] uppercase tracking-wider">Fecha Final</label>
-                  <input
-                    type="date"
-                    className={INPUT}
-                    value={form.endDate}
-                    onChange={(e) => setForm((p) => ({ ...p, endDate: e.target.value }))}
-                  />
-                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -474,24 +456,6 @@ export default function Projects_GanttView({
               </div>
 
               <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] text-[#8b93b8] uppercase tracking-wider">Fecha Inicio</label>
-                  <input
-                    type="date"
-                    className={INPUT}
-                    value={editingProject.startDate}
-                    onChange={(e) => setEditingProject((p) => p ? { ...p, startDate: e.target.value } : null)}
-                  />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <label className="text-[10px] text-[#8b93b8] uppercase tracking-wider">Fecha Final</label>
-                  <input
-                    type="date"
-                    className={INPUT}
-                    value={editingProject.endDate}
-                    onChange={(e) => setEditingProject((p) => p ? { ...p, endDate: e.target.value } : null)}
-                  />
-                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
