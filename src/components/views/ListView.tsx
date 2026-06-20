@@ -754,185 +754,159 @@ export default function ListView({
         )}
       </div>
 
-      {/* ── Popover de Checklist Avanzado ── */}
+      {/* ── Checklist Formal ── */}
       {checklistPopover && (() => {
         const taskRaw = popoverTask();
         if (!taskRaw) return null;
-        const task = taskRaw as import("@/types").Task;
-        const items    = task.checklist || [];
-        const today    = new Date().toISOString().split("T")[0];
-        const cntDone  = items.filter(i => i.status === "done" || i.done).length;
-        const cntProg  = items.filter(i => i.status === "in_progress").length;
-        const cntBlock = items.filter(i => i.status === "blocked").length;
-        const cntOver  = items.filter(i => i.dueDate && i.dueDate < today && i.status !== "done" && !i.done).length;
-        const pct = items.length > 0 ? Math.round((cntDone / items.length) * 100) : 0;
+        const task  = taskRaw as import("@/types").Task;
+        const items = task.checklist || [];
+        const done  = items.filter(i => i.status === "done" || i.done).length;
+        const noOk  = items.filter(i => i.status === "blocked").length;
+        const pct   = items.length > 0 ? Math.round((done / items.length) * 100) : 0;
         const barColor = pct === 100 ? "#3ecf8e" : pct > 60 ? "#4f7cff" : pct > 0 ? "#f5a623" : "#2e3352";
 
-        const PRIORITY_COLORS: Record<string, string> = { high: "#ff5c5c", medium: "#f5a623", low: "#3ecf8e" };
-        const PRIORITY_LABELS: Record<string, string> = { high: "Alta", medium: "Media", low: "Baja" };
-
-        function cycleStatus(item: typeof items[0]) {
-          const cycle: Array<typeof item.status> = ["pending", "in_progress", "done", "blocked"];
-          const curr = item.status || (item.done ? "done" : "pending");
-          const next = cycle[(cycle.indexOf(curr) + 1) % cycle.length];
-          saveTaskChecklist({ ...task, checklist: task.checklist?.map(i => i.id === item.id ? { ...i, status: next, done: next === "done" } : i) });
+        function setVerified(item: typeof items[0], val: "done" | "blocked" | "pending") {
+          saveTaskChecklist({ ...task, checklist: task.checklist?.map(i =>
+            i.id === item.id ? { ...i, status: val, done: val === "done" } : i
+          )});
         }
 
-        function StatusIcon({ item }: { item: typeof items[0] }) {
-          const s = item.status || (item.done ? "done" : "pending");
-          if (s === "done")       return <CheckSquare size={14} className="text-[#3ecf8e]" />;
-          if (s === "in_progress") return <div className="w-3.5 h-3.5 rounded-full border-2 border-[#4f7cff] border-t-transparent animate-spin" />;
-          if (s === "blocked")    return <div className="w-3.5 h-3.5 rounded border-2 border-[#ff5c5c] bg-[#ff5c5c]/20 flex items-center justify-center"><span className="text-[8px] text-[#ff5c5c] font-black">!</span></div>;
-          return <Square size={14} className="text-[#8b93b8]" />;
+        function setObs(item: typeof items[0], obs: string) {
+          saveTaskChecklist({ ...task, checklist: task.checklist?.map(i =>
+            i.id === item.id ? { ...i, notes: obs } : i
+          )});
         }
 
         function addItem() {
           if (!popoverNewText.trim()) return;
-          saveTaskChecklist({
-            ...task,
-            checklist: [...items, {
-              id: `chk_${Date.now()}`,
-              text: popoverNewText.trim(),
-              done: false,
-              status: "pending",
-              dueDate: popoverNewDue || undefined,
-              assigneeId: popoverNewAssignee || undefined,
-              priority: popoverNewPriority,
-            }],
-          });
-          setPopoverNewText(""); setPopoverNewDue(""); setPopoverNewAssignee(""); setPopoverNewPriority("medium");
-        }
-
-        function applyTemplate(name: string) {
-          const tpl = FLETE_TEMPLATES[name];
-          const newItems = tpl.map(t => ({ id: `chk_${Date.now()}_${t.id}`, text: t.text, done: false, status: "pending" as const, priority: t.priority }));
-          saveTaskChecklist({ ...task, checklist: [...items, ...newItems] });
-          setShowTemplates(false);
+          saveTaskChecklist({ ...task, checklist: [...items, { id: `chk_${Date.now()}`, text: popoverNewText.trim(), done: false, status: "pending" }] });
+          setPopoverNewText("");
         }
 
         return (
           <div
             ref={popoverRef}
             className="fixed z-50 bg-[#1a1d27] border border-[#2e3352] rounded-xl shadow-2xl shadow-black/60 overflow-hidden flex flex-col"
-            style={{ top: checklistPopover.top, left: Math.min(checklistPopover.left, window.innerWidth - 420), width: 400, maxHeight: "80vh" }}
+            style={{ top: checklistPopover.top, left: Math.min(checklistPopover.left, window.innerWidth - 580), width: 560, maxHeight: "82vh" }}
           >
 
-            {/* ── CABECERA ── */}
-            <div className="px-4 pt-3 pb-2.5 border-b border-[#2e3352] flex-shrink-0">
-              <div className="flex items-start justify-between gap-2 mb-2.5">
+            {/* ── TÍTULO DEL PROCESO ── */}
+            <div className="px-4 pt-3 pb-3 border-b border-[#2e3352] flex-shrink-0">
+              <div className="flex items-center justify-between gap-3 mb-2">
                 <div className="min-w-0">
-                  <p className="text-[12px] font-bold text-[#e8eaf6] truncate">{task.title}</p>
-                  <p className="text-[10px] text-[#8b93b8]">{items.length} paso{items.length !== 1 ? "s" : ""} · {pct}% completado</p>
+                  <p className="text-[9px] text-[#8b93b8] uppercase tracking-widest font-semibold mb-0.5">Checklist de verificación</p>
+                  <p className="text-[13px] font-bold text-[#e8eaf6] truncate">{task.title}</p>
                 </div>
-                <button onClick={() => { setChecklistPopover(null); }}
-                  className="text-[#8b93b8] hover:text-white transition-colors flex-shrink-0">
-                  <X size={13} />
-                </button>
+                <div className="flex items-center gap-3 flex-shrink-0">
+                  <div className="text-right">
+                    <span className="text-[11px] font-bold" style={{ color: barColor }}>{pct}%</span>
+                    <p className="text-[8px] text-[#8b93b8]">{done}/{items.length} ítems</p>
+                  </div>
+                  <button onClick={() => setChecklistPopover(null)} className="text-[#8b93b8] hover:text-white transition-colors">
+                    <X size={14} />
+                  </button>
+                </div>
               </div>
-
-              {/* Barra de progreso */}
-              <div className="h-1.5 rounded-full bg-[#0f1117] overflow-hidden mb-2">
-                <div className="h-full rounded-full transition-all duration-300" style={{ width: `${pct}%`, backgroundColor: barColor }} />
+              <div className="h-1.5 rounded-full bg-[#0f1117] overflow-hidden">
+                <div className="h-full rounded-full transition-all duration-500" style={{ width: `${pct}%`, backgroundColor: barColor }} />
               </div>
-
+              {noOk > 0 && (
+                <p className="text-[9px] text-[#ff5c5c] mt-1.5 font-medium">{noOk} ítem{noOk !== 1 ? "s" : ""} marcado{noOk !== 1 ? "s" : ""} como No cumplido</p>
+              )}
             </div>
 
-            {/* ── LISTA DE PASOS ── */}
-            <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1 min-h-0">
+            {/* ── ENCABEZADO TABLA ── */}
+            <div className="grid bg-[#0f1117] border-b border-[#2e3352] flex-shrink-0"
+              style={{ gridTemplateColumns: "28px 1fr 90px 150px 28px" }}>
+              <div className="px-2 py-1.5 text-[9px] font-bold text-[#8b93b8] uppercase tracking-wider text-center">#</div>
+              <div className="px-2 py-1.5 text-[9px] font-bold text-[#8b93b8] uppercase tracking-wider">Ítem a verificar</div>
+              <div className="px-2 py-1.5 text-[9px] font-bold text-[#8b93b8] uppercase tracking-wider text-center">Verificado</div>
+              <div className="px-2 py-1.5 text-[9px] font-bold text-[#8b93b8] uppercase tracking-wider">Observaciones</div>
+              <div />
+            </div>
+
+            {/* ── ÍTEMS ── */}
+            <div className="flex-1 overflow-y-auto min-h-0 divide-y divide-[#2e3352]/40">
               {items.length === 0 && (
-                <div className="flex flex-col items-center py-6 text-[#8b93b8]">
-                  <CheckSquare size={24} className="opacity-20 mb-2" />
-                  <p className="text-[11px] italic">Sin pasos — agrega uno abajo</p>
+                <div className="flex flex-col items-center py-8 text-[#8b93b8]">
+                  <CheckSquare size={28} className="opacity-20 mb-2" />
+                  <p className="text-[11px] italic">Sin ítems — agrega el primero abajo</p>
                 </div>
               )}
 
-              {items.map(item => {
-                const isExpanded = expandedItem === item.id;
-                const isOver = item.dueDate && item.dueDate < today && item.status !== "done" && !item.done;
-                const assignee = users_Gantt.find(u => u.id === item.assigneeId);
-                const statusVal = item.status || (item.done ? "done" : "pending");
+              {items.map((item, idx) => {
+                const s = item.status || (item.done ? "done" : "pending");
+                const isDone    = s === "done";
+                const isNoCumpl = s === "blocked";
 
                 return (
-                  <div key={item.id} className={`rounded-lg border transition-all ${isOver ? "border-[#f5a623]/40 bg-[#f5a623]/5" : "border-[#2e3352]/60 bg-[#0f1117]/40"}`}>
-                    <div className="flex items-center gap-2 px-2.5 py-1.5 group">
+                  <div key={item.id} className={`grid items-start transition-colors ${isDone ? "bg-[#3ecf8e]/5" : isNoCumpl ? "bg-[#ff5c5c]/5" : "hover:bg-white/[0.015]"}`}
+                    style={{ gridTemplateColumns: "28px 1fr 90px 150px 28px" }}>
 
-                      {/* Status toggle */}
-                      <button onClick={() => cycleStatus(item)} title="Cambiar estado" className="flex-shrink-0">
-                        <StatusIcon item={item} />
-                      </button>
+                    {/* Número */}
+                    <div className="px-2 py-2 text-[10px] text-[#8b93b8] text-center font-mono pt-2.5">{idx + 1}</div>
 
-                      {/* Text */}
-                      <span className={`flex-1 text-[11px] leading-tight min-w-0 ${statusVal === "done" ? "line-through text-[#8b93b8]" : "text-[#e8eaf6]"}`}>
+                    {/* Descripción del ítem */}
+                    <div className="px-2 py-2">
+                      <span className={`text-[11px] leading-snug block ${isDone ? "line-through text-[#8b93b8]" : isNoCumpl ? "text-[#ff8080]" : "text-[#e8eaf6]"}`}>
                         {item.text}
                       </span>
-
-                      {/* Priority badge */}
-                      {item.priority && item.priority !== "medium" && (
-                        <span className="text-[8px] font-bold px-1.5 py-0.5 rounded-full border flex-shrink-0"
-                          style={{ color: PRIORITY_COLORS[item.priority], borderColor: `${PRIORITY_COLORS[item.priority]}40`, backgroundColor: `${PRIORITY_COLORS[item.priority]}15` }}>
-                          {PRIORITY_LABELS[item.priority]}
-                        </span>
-                      )}
-
-                      {/* Due date */}
-                      {item.dueDate && (
-                        <span className={`text-[9px] flex-shrink-0 ${isOver ? "text-[#f5a623] font-semibold" : "text-[#8b93b8]"}`}>
-                          {isOver ? "⚠ " : ""}{item.dueDate.slice(5)}
-                        </span>
-                      )}
-
-                      {/* Assignee avatar */}
-                      {assignee && (
-                        <div className="w-4 h-4 rounded-full bg-[#4f7cff]/20 flex items-center justify-center text-[7px] font-bold text-[#4f7cff] flex-shrink-0"
-                          title={assignee.name}>
-                          {assignee.name?.split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase()}
-                        </div>
-                      )}
-
-                      {/* Expand / Delete */}
-                      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all flex-shrink-0">
-                        <button onClick={() => setExpandedItem(isExpanded ? null : item.id)}
-                          className="text-[#8b93b8] hover:text-[#4f7cff] transition-colors text-[9px] px-1">
-                          {isExpanded ? "▲" : "▼"}
-                        </button>
-                        <button onClick={() => saveTaskChecklist({ ...task, checklist: task.checklist?.filter(i => i.id !== item.id) })}
-                          className="text-[#ff5c5c] hover:text-[#ff5c5c]/70 transition-colors">
-                          <Trash2 size={10} />
-                        </button>
-                      </div>
                     </div>
 
-                    {/* Expanded: solo notas */}
-                    {isExpanded && (
-                      <div className="px-3 pb-2.5 pt-1 border-t border-[#2e3352]/40">
-                        <textarea
-                          className="w-full bg-[#0f1117] border border-[#2e3352] rounded px-2 py-1.5 text-[10px] text-[#e8eaf6] placeholder-[#8b93b8] outline-none resize-none"
-                          rows={2}
-                          placeholder="Notas / descripción del paso..."
-                          value={item.notes || ""}
-                          onChange={e => saveTaskChecklist({ ...task, checklist: task.checklist?.map(i => i.id === item.id ? { ...i, notes: e.target.value } : i) })}
-                        />
-                      </div>
-                    )}
+                    {/* Casillas ✓ / ✗ */}
+                    <div className="px-2 py-2 flex items-center justify-center gap-2 pt-2.5">
+                      {/* ✓ Cumplido */}
+                      <button
+                        onClick={() => setVerified(item, isDone ? "pending" : "done")}
+                        title="Cumplido"
+                        className={`w-6 h-6 rounded flex items-center justify-center border text-[11px] font-bold transition-all ${isDone ? "bg-[#3ecf8e] border-[#3ecf8e] text-white" : "border-[#2e3352] text-[#8b93b8] hover:border-[#3ecf8e] hover:text-[#3ecf8e]"}`}
+                      >✓</button>
+                      {/* ✗ No cumplido */}
+                      <button
+                        onClick={() => setVerified(item, isNoCumpl ? "pending" : "blocked")}
+                        title="No cumplido"
+                        className={`w-6 h-6 rounded flex items-center justify-center border text-[11px] font-bold transition-all ${isNoCumpl ? "bg-[#ff5c5c] border-[#ff5c5c] text-white" : "border-[#2e3352] text-[#8b93b8] hover:border-[#ff5c5c] hover:text-[#ff5c5c]"}`}
+                      >✗</button>
+                    </div>
+
+                    {/* Observaciones — inline */}
+                    <div className="px-2 py-1.5">
+                      <input
+                        className="w-full bg-transparent text-[10px] text-[#e8eaf6] placeholder-[#2e3352] outline-none border-b border-[#2e3352]/60 focus:border-[#4f7cff]/60 pb-0.5 transition-colors"
+                        placeholder="Observación..."
+                        value={item.notes || ""}
+                        onChange={e => setObs(item, e.target.value)}
+                      />
+                    </div>
+
+                    {/* Eliminar */}
+                    <div className="flex items-center justify-center py-2">
+                      <button
+                        onClick={() => saveTaskChecklist({ ...task, checklist: task.checklist?.filter(i => i.id !== item.id) })}
+                        className="text-[#2e3352] hover:text-[#ff5c5c] transition-colors"
+                      >
+                        <Trash2 size={11} />
+                      </button>
+                    </div>
                   </div>
                 );
               })}
             </div>
 
-            {/* ── AGREGAR PASO ── */}
-            <div className="border-t border-[#2e3352] px-3 pt-2.5 pb-3 flex-shrink-0">
+            {/* ── AGREGAR ÍTEM ── */}
+            <div className="border-t border-[#2e3352] bg-[#0f1117]/60 px-3 pt-2.5 pb-3 flex-shrink-0">
               <div className="flex gap-2 items-center">
                 <input
                   autoFocus
-                  className="flex-1 bg-[#0f1117] border border-[#2e3352] focus:border-[#4f7cff]/60 rounded-lg px-3 py-1.5 text-[11px] text-[#e8eaf6] placeholder-[#8b93b8] outline-none transition-colors"
-                  placeholder="Agregar paso... (Enter)"
+                  className="flex-1 bg-[#1a1d27] border border-[#2e3352] focus:border-[#4f7cff]/60 rounded-lg px-3 py-1.5 text-[11px] text-[#e8eaf6] placeholder-[#8b93b8] outline-none transition-colors"
+                  placeholder="Nuevo ítem a verificar... (Enter para agregar)"
                   value={popoverNewText}
                   onChange={e => setPopoverNewText(e.target.value)}
                   onKeyDown={e => { if (e.key === "Enter") addItem(); if (e.key === "Escape") setChecklistPopover(null); }}
                 />
                 <button onClick={addItem} disabled={!popoverNewText.trim()}
-                  className="px-3 py-1.5 rounded-lg bg-[#4f7cff] text-white text-[10px] font-bold hover:bg-[#4f7cff]/80 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex-shrink-0">
-                  <Plus size={13} />
+                  className="px-3 py-1.5 rounded-lg bg-[#4f7cff] text-white text-[10px] font-bold hover:bg-[#4f7cff]/80 disabled:opacity-30 disabled:cursor-not-allowed transition-all flex-shrink-0 flex items-center gap-1">
+                  <Plus size={12} /> Agregar
                 </button>
               </div>
             </div>
