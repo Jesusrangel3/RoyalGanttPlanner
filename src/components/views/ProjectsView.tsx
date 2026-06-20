@@ -168,7 +168,8 @@ export default function Projects_GanttView({
           return (
             <div
               key={proj.id}
-              className={`border rounded-xl p-5 flex flex-col justify-between transition-all duration-200 group relative ${activeBorder}`}
+              onClick={() => setActiveProjectId(proj.id)}
+              className={`border rounded-xl p-5 flex flex-col justify-between transition-all duration-200 group relative cursor-pointer ${activeBorder}`}
             >
               {/* Active project badge indicator */}
               {activeProjectId === proj.id && (
