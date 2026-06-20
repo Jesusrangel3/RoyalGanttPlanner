@@ -835,20 +835,6 @@ export default function ListView({
                 <div className="h-full rounded-full transition-all duration-300" style={{ width: `${pct}%`, backgroundColor: barColor }} />
               </div>
 
-              {/* Stats row */}
-              <div className="flex gap-2">
-                {[
-                  { label: "Completados", val: cntDone,  color: "#3ecf8e" },
-                  { label: "En progreso", val: cntProg,  color: "#4f7cff" },
-                  { label: "Bloqueados",  val: cntBlock, color: "#ff5c5c" },
-                  { label: "Vencidos",    val: cntOver,  color: "#f5a623" },
-                ].map(s => (
-                  <div key={s.label} className="flex-1 text-center">
-                    <div className="text-sm font-bold" style={{ color: s.val > 0 ? s.color : "#2e3352" }}>{s.val}</div>
-                    <div className="text-[8px] text-[#8b93b8] leading-tight">{s.label}</div>
-                  </div>
-                ))}
-              </div>
             </div>
 
             {/* ── LISTA DE PASOS ── */}
