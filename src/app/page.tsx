@@ -263,6 +263,14 @@ export default function Home() {
     }
   }, [user]);
 
+  // Redirige a gantt si el tab activo no está permitido para el rol del usuario
+  useEffect(() => {
+    const restricted = new Set(["list", "workload", "approvals"]);
+    if (user && user.role !== "Project Manager" && restricted.has(activeTab)) {
+      setActiveTab("gantt");
+    }
+  }, [user?.role, activeTab]);
+
   const toggleTheme = () => {
     const nextTheme = theme === "dark" ? "light" : "dark";
     setTheme(nextTheme);
@@ -897,14 +905,6 @@ export default function Home() {
   // Tabs restringidas: solo el Project Manager las ve
   const PM_ONLY_TABS = new Set(["list", "workload", "approvals"]);
   const visibleTabs  = isPM ? TABS : TABS.filter(t => !PM_ONLY_TABS.has(t.id));
-
-  // Si el tab activo no está disponible para este rol al cargar el usuario, redirige a Gantt
-  useEffect(() => {
-    if (user && !isPM && PM_ONLY_TABS.has(activeTab)) {
-      setActiveTab("gantt");
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.role]);
 
   // Proyectos visibles: PM ve todos, el resto solo en los que tiene tareas asignadas
   const visibleProjects = isPM
