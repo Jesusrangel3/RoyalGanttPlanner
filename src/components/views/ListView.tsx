@@ -819,8 +819,8 @@ export default function ListView({
             className="fixed z-50 flex flex-col overflow-hidden rounded-2xl"
             style={{
               top: checklistPopover.top,
-              left: Math.min(checklistPopover.left, window.innerWidth - 620),
-              width: 600,
+              left: Math.min(checklistPopover.left, window.innerWidth - 700),
+              width: 680,
               maxHeight: "84vh",
               background: pop.bg,
               border: pop.border,
@@ -874,7 +874,7 @@ export default function ListView({
 
             {/* ── ENCABEZADO DE COLUMNAS ── */}
             <div className="grid flex-shrink-0 px-1"
-              style={{ gridTemplateColumns: "40px 1fr 100px 170px 36px", background: pop.headerBg, borderBottom: pop.dividerSub }}>
+              style={{ gridTemplateColumns: "36px 1fr 86px 260px 30px", background: pop.headerBg, borderBottom: pop.dividerSub }}>
               {["#", "Ítem a verificar", "Verificado", "Observaciones"].map((h, i) => (
                 <div key={h} className={`px-3 py-2 text-[8.5px] font-bold uppercase tracking-widest ${i === 0 || i === 2 ? "text-center" : ""}`}
                   style={{ color: pop.colHeader }}>{h}</div>
@@ -899,7 +899,7 @@ export default function ListView({
 
                 return (
                   <div key={item.id} className="grid items-center px-1 group transition-colors"
-                    style={{ gridTemplateColumns: "40px 1fr 100px 170px 36px", borderBottom: `1px solid ${isLight ? "rgba(203,213,225,0.5)" : "rgba(46,51,82,0.3)"}`, minHeight: 46, background: rowBg }}
+                    style={{ gridTemplateColumns: "36px 1fr 86px 260px 30px", borderBottom: `1px solid ${isLight ? "rgba(203,213,225,0.5)" : "rgba(46,51,82,0.3)"}`, minHeight: 46, background: rowBg }}
                     onMouseEnter={e => (e.currentTarget.style.background = pop.rowHover)}
                     onMouseLeave={e => (e.currentTarget.style.background = rowBg)}>
 
@@ -931,11 +931,11 @@ export default function ListView({
 
                     <div className="px-3">
                       <input
-                        className="w-full bg-transparent outline-none pb-0.5 text-[11px]"
+                        className="w-full bg-transparent outline-none py-1 text-[12px]"
                         style={{ borderBottom: `1px solid ${pop.obsLine}`, color: pop.obsColor }}
                         onFocus={e => (e.target.style.borderBottomColor = "rgba(79,124,255,0.5)")}
                         onBlur={e => (e.target.style.borderBottomColor = pop.obsLine)}
-                        placeholder="Observación..."
+                        placeholder="Escribe una observación..."
                         value={item.notes || ""}
                         onChange={e => setObs(item, e.target.value)}
                       />
