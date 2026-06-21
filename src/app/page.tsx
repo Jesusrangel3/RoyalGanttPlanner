@@ -35,7 +35,7 @@ const TABS: { id: Tab; label: string; icon: React.ReactNode }[] = [
   { id: "gantt",     label: "Diagrama de Gantt", icon: <LayoutDashboard size={15} /> },
   { id: "board",     label: "Tablero",           icon: <Trello size={15} /> },
   { id: "calendar",  label: "Calendario",        icon: <Calendar size={15} /> },
-  { id: "reports",   label: "Informes",          icon: <BarChart2 size={15} /> },
+  { id: "reports",   label: "Dashboard",         icon: <BarChart2 size={15} /> },
   { id: "workload",  label: "Carga de Trabajo",  icon: <Users size={15} /> },
   { id: "approvals", label: "Aprobaciones",       icon: <Target size={15} /> },
   { id: "users_Gantt",     label: "Personas",          icon: <Users size={15} /> },
@@ -1156,12 +1156,13 @@ export default function Home() {
           />
         )}
         {activeTab === "reports"  && (
-          <ReportsView 
-            Tasks_Gantt={projectTasks} 
-            Projects_Gantt={Projects_Gantt} 
+          <ReportsView
+            Tasks_Gantt={projectTasks}
+            Projects_Gantt={Projects_Gantt}
             setProjects_Gantt={handleSetProjects_Gantt}
-            Milestones_Gantt={projectMilestones_Gantt} 
-            users_Gantt={users_Gantt} 
+            Milestones_Gantt={projectMilestones_Gantt}
+            Phases_Gantt={projectPhases_Gantt}
+            users_Gantt={users_Gantt}
             activeProjectId={activeProjectId}
           />
         )}
