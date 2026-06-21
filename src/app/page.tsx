@@ -898,10 +898,13 @@ export default function Home() {
   const PM_ONLY_TABS = new Set(["list", "workload", "approvals"]);
   const visibleTabs  = isPM ? TABS : TABS.filter(t => !PM_ONLY_TABS.has(t.id));
 
-  // Si el tab activo no está disponible para este rol, redirige a Gantt
-  if (!isPM && PM_ONLY_TABS.has(activeTab)) {
-    setActiveTab("gantt");
-  }
+  // Si el tab activo no está disponible para este rol al cargar el usuario, redirige a Gantt
+  useEffect(() => {
+    if (user && !isPM && PM_ONLY_TABS.has(activeTab)) {
+      setActiveTab("gantt");
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.role]);
 
   // Proyectos visibles: PM ve todos, el resto solo en los que tiene tareas asignadas
   const visibleProjects = isPM
