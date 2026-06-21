@@ -819,8 +819,8 @@ export default function ListView({
             className="fixed z-50 flex flex-col overflow-hidden rounded-2xl"
             style={{
               top: checklistPopover.top,
-              left: Math.min(checklistPopover.left, window.innerWidth - 700),
-              width: 680,
+              left: Math.min(checklistPopover.left, window.innerWidth - 720),
+              width: 700,
               maxHeight: "84vh",
               background: pop.bg,
               border: pop.border,
@@ -874,7 +874,7 @@ export default function ListView({
 
             {/* ── ENCABEZADO DE COLUMNAS ── */}
             <div className="grid flex-shrink-0 px-1"
-              style={{ gridTemplateColumns: "36px 1fr 86px 260px 30px", background: pop.headerBg, borderBottom: pop.dividerSub }}>
+              style={{ gridTemplateColumns: "36px 200px 80px 1fr 30px", background: pop.headerBg, borderBottom: pop.dividerSub }}>
               {["#", "Ítem a verificar", "Verificado", "Observaciones"].map((h, i) => (
                 <div key={h} className={`px-3 py-2 text-[8.5px] font-bold uppercase tracking-widest ${i === 0 || i === 2 ? "text-center" : ""}`}
                   style={{ color: pop.colHeader }}>{h}</div>
@@ -899,7 +899,7 @@ export default function ListView({
 
                 return (
                   <div key={item.id} className="grid items-center px-1 group transition-colors"
-                    style={{ gridTemplateColumns: "36px 1fr 86px 260px 30px", borderBottom: `1px solid ${isLight ? "rgba(203,213,225,0.5)" : "rgba(46,51,82,0.3)"}`, minHeight: 46, background: rowBg }}
+                    style={{ gridTemplateColumns: "36px 200px 80px 1fr 30px", borderBottom: `1px solid ${isLight ? "rgba(203,213,225,0.5)" : "rgba(46,51,82,0.3)"}`, minHeight: 46, background: rowBg }}
                     onMouseEnter={e => (e.currentTarget.style.background = pop.rowHover)}
                     onMouseLeave={e => (e.currentTarget.style.background = rowBg)}>
 
