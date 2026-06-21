@@ -331,12 +331,6 @@ export default function TaskModal({
                       .map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
                   </select>
                 </Field>
-                <Field label="Meta / Objetivo" className="flex-1">
-                  <select className={INPUT} value={form.milestoneId || ""} onChange={(e) => set("milestoneId", e.target.value)} disabled={!isPM}>
-                    <option value="">Ninguna meta</option>
-                    {Milestones_Gantt.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
-                  </select>
-                </Field>
               </div>
 
               <div className="flex gap-3">
