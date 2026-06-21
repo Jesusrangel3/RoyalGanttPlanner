@@ -893,11 +893,33 @@ export default function Home() {
   const activeProj = Projects_Gantt.find((p) => p.id === activeProjectId) || Projects_Gantt[0] || mockProjects[0];
 
   const isPM = user?.role === "Project Manager";
-  const projectTasks = tasks.filter((t) => t.projectId === activeProj.id);
-  const projectMilestones_Gantt = Milestones_Gantt.filter((m) => m.projectId === activeProj.id);
-  let projectPhases_Gantt = Phases_Gantt.filter((p) => p.projectId === activeProj.id || (!p.projectId && activeProj.id === "proj1"));
+
+  // Tabs restringidas: solo el Project Manager las ve
+  const PM_ONLY_TABS = new Set(["list", "workload", "approvals"]);
+  const visibleTabs  = isPM ? TABS : TABS.filter(t => !PM_ONLY_TABS.has(t.id));
+
+  // Si el tab activo no está disponible para este rol, redirige a Gantt
+  if (!isPM && PM_ONLY_TABS.has(activeTab)) {
+    setActiveTab("gantt");
+  }
+
+  // Proyectos visibles: PM ve todos, el resto solo en los que tiene tareas asignadas
+  const visibleProjects = isPM
+    ? Projects_Gantt
+    : Projects_Gantt.filter(p =>
+        tasks.some(t => t.projectId === p.id && t.assigneeId === user?.id)
+      );
+
+  // Si el proyecto activo quedó fuera del scope del usuario, cambia al primero visible
+  const safeActiveProj = visibleProjects.find(p => p.id === activeProjectId)
+    ? activeProj
+    : visibleProjects[0] || activeProj;
+
+  const projectTasks = tasks.filter((t) => t.projectId === safeActiveProj.id);
+  const projectMilestones_Gantt = Milestones_Gantt.filter((m) => m.projectId === safeActiveProj.id);
+  let projectPhases_Gantt = Phases_Gantt.filter((p) => p.projectId === safeActiveProj.id || (!p.projectId && safeActiveProj.id === "proj1"));
   if (projectPhases_Gantt.length === 0) {
-    if (activeProj.id === "proj1") {
+    if (safeActiveProj.id === "proj1") {
       projectPhases_Gantt = [
         { id: 'p1', name: 'Inicio y planificación', color: '#4f7cff', projectId: 'proj1' },
         { id: 'p2', name: 'Diseño y arquitectura', color: '#7c5cfc', projectId: 'proj1' },
@@ -907,11 +929,11 @@ export default function Home() {
       ];
     } else {
       projectPhases_Gantt = [
-        { id: `${activeProj.id}_init`, name: 'Inicio y planificación', color: '#4f7cff', projectId: activeProj.id },
-        { id: `${activeProj.id}_design`, name: 'Diseño y arquitectura', color: '#7c5cfc', projectId: activeProj.id },
-        { id: `${activeProj.id}_dev`, name: 'Desarrollo', color: '#3ecf8e', projectId: activeProj.id },
-        { id: `${activeProj.id}_qa`, name: 'Pruebas y entrega', color: '#f5a623', projectId: activeProj.id },
-        { id: `${activeProj.id}_blocked`, name: 'Bloqueadas', color: '#ff5c5c', projectId: activeProj.id }
+        { id: `${safeActiveProj.id}_init`, name: 'Inicio y planificación', color: '#4f7cff', projectId: safeActiveProj.id },
+        { id: `${safeActiveProj.id}_design`, name: 'Diseño y arquitectura', color: '#7c5cfc', projectId: safeActiveProj.id },
+        { id: `${safeActiveProj.id}_dev`, name: 'Desarrollo', color: '#3ecf8e', projectId: safeActiveProj.id },
+        { id: `${safeActiveProj.id}_qa`, name: 'Pruebas y entrega', color: '#f5a623', projectId: safeActiveProj.id },
+        { id: `${safeActiveProj.id}_blocked`, name: 'Bloqueadas', color: '#ff5c5c', projectId: safeActiveProj.id }
       ];
     }
   }
@@ -944,24 +966,26 @@ export default function Home() {
             onChange={(e) => setActiveProjectId(e.target.value)}
             className="bg-transparent text-xs font-semibold text-[#e8eaf6] outline-none cursor-pointer pr-2"
           >
-            {Projects_Gantt.map((p) => (
+            {visibleProjects.map((p) => (
               <option key={p.id} value={p.id} className="bg-[#1a1d27]">
                 {p.name}
               </option>
             ))}
           </select>
-          <button
-            onClick={() => setShowAddProject(true)}
-            className="text-[#8b93b8] hover:text-white p-0.5 rounded transition"
-            title="Crear nuevo proyecto maestro"
-          >
-            <Plus size={14} />
-          </button>
+          {isPM && (
+            <button
+              onClick={() => setShowAddProject(true)}
+              className="text-[#8b93b8] hover:text-white p-0.5 rounded transition"
+              title="Crear nuevo proyecto maestro"
+            >
+              <Plus size={14} />
+            </button>
+          )}
         </div>
 
         {/* Tab Navigation */}
         <nav className="flex items-center gap-1 ml-2">
-          {TABS.map((tab) => (
+          {visibleTabs.map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
@@ -1115,7 +1139,7 @@ export default function Home() {
             Phases_Gantt={projectPhases_Gantt} 
             Milestones_Gantt={projectMilestones_Gantt}
             users_Gantt={users_Gantt} 
-            activeProjectId={activeProj.id}
+            activeProjectId={safeActiveProj.id}
           />
         )}
         {activeTab === "calendar" && (
@@ -1125,7 +1149,7 @@ export default function Home() {
             Phases_Gantt={projectPhases_Gantt} 
             Milestones_Gantt={projectMilestones_Gantt}
             users_Gantt={users_Gantt} 
-            activeProjectId={activeProj.id}
+            activeProjectId={safeActiveProj.id}
           />
         )}
         {activeTab === "reports"  && (
@@ -1180,7 +1204,7 @@ export default function Home() {
             setTasks={handleSetTasks}
             Projects_Gantt={Projects_Gantt}
             users_Gantt={users_Gantt}
-            activeProjectId={activeProj.id}
+            activeProjectId={safeActiveProj.id}
             theme={theme}
           />
         )}
