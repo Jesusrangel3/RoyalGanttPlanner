@@ -493,99 +493,105 @@ export default function ReportsView({
       {/* ── SECCIÓN 3: Calendario y Presupuesto (Dashboard Fila 2) ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
-        {/* Card: Calendario (Horizontal Bar Chart) */}
-        <div className="bg-[#1a1d27] border border-[#2e3352] rounded-xl p-5 shadow-xl flex flex-col justify-between print-card">
-          <div>
-            <div className="flex justify-between items-center mb-4 border-b border-[#2e3352]/50 pb-2">
-              <h2 className="text-xs font-bold text-[#e8eaf6] uppercase tracking-wider print:text-black">
-                Calendario
-              </h2>
-              <span className="text-[9px] bg-[#22263a] border border-[#2e3352] px-2 py-0.5 rounded text-[#8b93b8] font-bold">
-                ACTUAL A PLANIFICADO
-              </span>
-            </div>
+        {/* Card: Línea de tiempo de avance (SVG) */}
+        <div className="bg-[#1a1d27] border border-[#2e3352] rounded-xl p-5 shadow-xl flex flex-col print-card">
+          <div className="flex justify-between items-center mb-4 border-b border-[#2e3352]/50 pb-2">
+            <h2 className="text-xs font-bold text-[#e8eaf6] uppercase tracking-wider print:text-black">
+              Avance semanal
+            </h2>
+            <span className="text-[9px] bg-[#22263a] border border-[#2e3352] px-2 py-0.5 rounded text-[#8b93b8] font-bold">
+              REAL VS IDEAL
+            </span>
+          </div>
+          {(() => {
+            const W = 360; const H = 140;
+            const PAD = { t: 12, r: 16, b: 28, l: 28 };
+            const cW = W - PAD.l - PAD.r;
+            const cH = H - PAD.t - PAD.b;
+            const projStart = new Date(activeProj.startDate + "T00:00:00").getTime();
+            const projEnd   = new Date(activeProj.endDate   + "T00:00:00").getTime();
+            const span = projEnd - projStart || 1;
+            const WEEK = 7 * 24 * 60 * 60 * 1000;
+            const weeks = Math.max(2, Math.ceil(span / WEEK));
+            const nowMs = now.getTime();
 
-            <div className="space-y-6 py-4">
-              {/* Eje X de porcentajes (-100 a +100) */}
-              <div className="relative">
-                <div className="flex justify-between text-[8px] text-[#8b93b8] px-2 border-b border-[#2e3352]/30 pb-1">
-                  <span>-100</span>
-                  <span>-75</span>
-                  <span>-50</span>
-                  <span>-25</span>
-                  <span className="text-[#e8eaf6] font-bold">0</span>
-                  <span>25</span>
-                  <span>50</span>
-                  <span>75</span>
-                  <span>100</span>
-                </div>
-                {/* Eje central vertical cero */}
-                <div className="absolute left-1/2 top-0 bottom-0 w-0.5 bg-white/30 border-l border-dashed border-white/20 pointer-events-none h-32" />
+            const idealPts: string[] = [];
+            const actualPts: string[] = [];
 
-                {/* Contenedor de las barras horizontales */}
-                <div className="space-y-4 pt-3 relative z-10">
-                  {/* Barra 1: Progreso Planificado */}
-                  <div className="flex items-center text-xs">
-                    <span className="w-28 text-right pr-3 text-[#8b93b8] font-semibold text-[10px]">Progreso planificado</span>
-                    <div className="flex-1 bg-[#11151f] h-5 rounded overflow-hidden relative border border-[#2e3352]/20">
-                      <div
-                        className="h-full bg-gradient-to-r from-blue-600/70 to-blue-500 rounded-r"
-                        style={{
-                          width: `${avgPlannedProgress / 2}%`,
-                          marginLeft: "50%"
-                        }}
-                      />
-                      <span className="absolute left-[52%] top-1/2 -translate-y-1/2 text-[9px] font-bold text-white">{avgPlannedProgress}%</span>
-                    </div>
-                  </div>
+            for (let i = 0; i <= weeks; i++) {
+              const t = projStart + (span / weeks) * i;
+              const xPct = (t - projStart) / span;
+              const x = PAD.l + xPct * cW;
+              // Ideal: 0→100 lineal
+              const idealY = PAD.t + (1 - i / weeks) * cH;
+              idealPts.push(`${x},${idealY}`);
+              // Real: sólo hasta hoy
+              if (t <= nowMs + WEEK) {
+                const snapshot = projTasks.length
+                  ? projTasks.reduce((s, task) => {
+                      try {
+                        const end = new Date(task.endDate + "T00:00:00").getTime();
+                        if (task.status === "done" && end <= t) return s + 100;
+                        if (t >= end) return s + (task.progress || 0);
+                        const start = new Date(task.startDate + "T00:00:00").getTime();
+                        if (t < start) return s;
+                        return s + Math.round(((t - start) / (end - start)) * (task.progress || 0));
+                      } catch { return s + (task.progress || 0); }
+                    }, 0) / projTasks.length
+                  : 0;
+                const actualY = PAD.t + (1 - snapshot / 100) * cH;
+                actualPts.push(`${x},${actualY}`);
+              }
+            }
 
-                  {/* Barra 2: Progreso Actual */}
-                  <div className="flex items-center text-xs">
-                    <span className="w-28 text-right pr-3 text-[#8b93b8] font-semibold text-[10px]">Progreso actual</span>
-                    <div className="flex-1 bg-[#11151f] h-5 rounded overflow-hidden relative border border-[#2e3352]/20">
-                      <div
-                        className="h-full bg-gradient-to-r from-emerald-600/70 to-emerald-500 rounded-r"
-                        style={{
-                          width: `${avgProgress / 2}%`,
-                          marginLeft: "50%"
-                        }}
-                      />
-                      <span className="absolute left-[52%] top-1/2 -translate-y-1/2 text-[9px] font-bold text-white">{avgProgress}%</span>
-                    </div>
-                  </div>
+            const nowX = PAD.l + Math.min(1, Math.max(0, (nowMs - projStart) / span)) * cW;
+            const yLabels = [100, 75, 50, 25, 0];
 
-                  {/* Barra 3: Antelación (Adelantado / Retrasado) */}
-                  <div className="flex items-center text-xs">
-                    <span className="w-28 text-right pr-3 text-[#8b93b8] font-semibold text-[10px]">Antelación</span>
-                    <div className="flex-1 bg-[#11151f] h-5 rounded overflow-hidden relative border border-[#2e3352]/20">
-                      {progressDiff >= 0 ? (
-                        /* Adelantado - Barra va hacia la derecha */
-                        <div
-                          className="h-full bg-gradient-to-r from-[#f5a623]/80 to-[#f5a623] rounded-r"
-                          style={{
-                            width: `${Math.min(50, progressDiff / 2)}%`,
-                            marginLeft: "50%"
-                          }}
-                        />
-                      ) : (
-                        /* Atrasado - Barra va hacia la izquierda */
-                        <div
-                          className="h-full bg-gradient-to-r from-red-600 to-rose-500 rounded-l"
-                          style={{
-                            width: `${Math.min(50, Math.abs(progressDiff) / 2)}%`,
-                            marginLeft: `${50 - Math.min(50, Math.abs(progressDiff) / 2)}%`
-                          }}
-                        />
-                      )}
-                      <span className={`absolute top-1/2 -translate-y-1/2 text-[9px] font-bold ${progressDiff >= 0 ? "left-[52%] text-[#f5a623]" : "right-[52%] text-rose-500"}`}>
-                        {progressDiff >= 0 ? `+${progressDiff}%` : `${progressDiff}%`}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-            </div>
+            return (
+              <svg viewBox={`0 0 ${W} ${H}`} className="w-full">
+                {/* Grid + etiquetas Y */}
+                {yLabels.map((v, i) => {
+                  const y = PAD.t + (i / 4) * cH;
+                  return (
+                    <g key={v}>
+                      <line x1={PAD.l} y1={y} x2={PAD.l + cW} y2={y} stroke="#2e3352" strokeWidth={0.5} strokeDasharray="3 3" />
+                      <text x={PAD.l - 4} y={y + 3} fill="#8b93b8" fontSize={7} textAnchor="end">{v}%</text>
+                    </g>
+                  );
+                })}
+                {/* Ejes */}
+                <line x1={PAD.l} y1={PAD.t} x2={PAD.l} y2={PAD.t + cH} stroke="#2e3352" strokeWidth={1} />
+                <line x1={PAD.l} y1={PAD.t + cH} x2={PAD.l + cW} y2={PAD.t + cH} stroke="#2e3352" strokeWidth={1} />
+                {/* Hoy */}
+                {nowMs >= projStart && nowMs <= projEnd && (
+                  <line x1={nowX} y1={PAD.t} x2={nowX} y2={PAD.t + cH} stroke="#f5a623" strokeWidth={1} strokeDasharray="4 2" />
+                )}
+                {/* Área relleno ideal */}
+                <polyline points={idealPts.join(" ")} fill="none" stroke="#4f7cff" strokeWidth={1.5} strokeDasharray="5 3" strokeLinecap="round" strokeLinejoin="round" opacity={0.7} />
+                {/* Área relleno real */}
+                {actualPts.length > 1 && (
+                  <polyline points={actualPts.join(" ")} fill="none" stroke="#3ecf8e" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+                )}
+                {/* Puntos de datos reales */}
+                {actualPts.map((pt, i) => {
+                  const [px, py] = pt.split(",").map(Number);
+                  return <circle key={i} cx={px} cy={py} r={2.5} fill="#3ecf8e" />;
+                })}
+                {/* Leyenda */}
+                <line x1={PAD.l + cW - 110} y1={PAD.t + 4} x2={PAD.l + cW - 96} y2={PAD.t + 4} stroke="#4f7cff" strokeWidth={1.5} strokeDasharray="4 2" />
+                <text x={PAD.l + cW - 93} y={PAD.t + 7} fill="#4f7cff" fontSize={7}>Ideal</text>
+                <line x1={PAD.l + cW - 60} y1={PAD.t + 4} x2={PAD.l + cW - 46} y2={PAD.t + 4} stroke="#3ecf8e" strokeWidth={2} />
+                <text x={PAD.l + cW - 43} y={PAD.t + 7} fill="#3ecf8e" fontSize={7}>Real</text>
+                {/* Fechas X */}
+                {[0, 0.25, 0.5, 0.75, 1].map((f, i) => {
+                  const d = new Date(projStart + span * f);
+                  return <text key={i} x={PAD.l + f * cW} y={H - 4} fill="#8b93b8" fontSize={6.5} textAnchor="middle">{d.toLocaleDateString("es-MX", { month: "short", day: "2-digit" })}</text>;
+                })}
+              </svg>
+            );
+          })()}
+          <div className="flex gap-4 mt-2 text-[9px] text-[#8b93b8]">
+            <span>🟦 Línea ideal = progreso esperado por tiempo transcurrido</span>
           </div>
         </div>
 
@@ -675,48 +681,61 @@ export default function ReportsView({
       {/* ── SECCIÓN 4: Recursos y Materiales (Dashboard Fila 3) ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         
-        {/* Distribución de Carga de Trabajo de Recursos */}
+        {/* Carga de tareas activas por persona */}
         <div className="bg-[#1a1d27] border border-[#2e3352] rounded-xl p-5 print-card">
           <h2 className="text-xs font-bold text-[#e8eaf6] uppercase tracking-wider mb-4 border-b border-[#2e3352]/50 pb-2 flex items-center gap-1.5 print:text-black">
-            <Clock size={14} className="text-[#4f7cff] print:text-black" />
-            Distribución de Horas y Capacidad por Recurso
+            <User size={14} className="text-[#4f7cff] print:text-black" />
+            Carga activa por persona
           </h2>
+          {(() => {
+            const activeStatuses = ["in_progress", "review"] as const;
+            const rows = users_Gantt.map(u => {
+              const active  = projTasks.filter(t => (t.assigneeId === u.id || t.assigneeIds?.includes(u.id)) && activeStatuses.includes(t.status as any));
+              const inProg  = active.filter(t => t.status === "in_progress").length;
+              const inRev   = active.filter(t => t.status === "review").length;
+              return { u, total: active.length, inProg, inRev };
+            }).filter(r => r.total > 0).sort((a, b) => b.total - a.total);
 
-          <div className="space-y-4">
-            {users_Gantt.map(u => {
-              const userTasks = projTasks.filter(t => (t.assigneeIds?.includes(u.id) || t.assigneeId === u.id) && t.status !== "done");
-              const estimated = userTasks.reduce((sum, t) => sum + (t.estimatedHours || 0), 0);
-              const limit = u.availableHours || 40;
-              const pct = Math.min(100, Math.round((estimated / limit) * 100));
-              const isOverloaded = estimated > limit;
+            const maxActive = Math.max(...rows.map(r => r.total), 1);
 
-              return (
-                <div key={u.id} className="space-y-1.5">
-                  <div className="flex justify-between text-xs">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 rounded-full" style={{ background: u.color }} />
-                      <span className="font-semibold text-[#e8eaf6]">{u.name}</span>
-                      <span className="text-[9px] text-[#8b93b8]">({u.role})</span>
-                    </div>
-                    <span className={`font-semibold ${isOverloaded ? "text-[#ff5c5c]" : "text-[#8b93b8]"}`}>
-                      {estimated}h / {limit}h ({pct}%)
-                    </span>
-                  </div>
-                  <div className="h-3 bg-[#11151f] rounded-full overflow-hidden flex relative border border-[#2e3352]/20">
-                    <div
-                      className={`h-full rounded-full transition-all ${isOverloaded ? "bg-gradient-to-r from-red-600 to-rose-400" : "bg-gradient-to-r from-[#4f7cff] to-[#7c5cfc]"}`}
-                      style={{ width: `${pct}%` }}
-                    />
-                    {isOverloaded && (
-                      <div className="absolute right-3 top-0 bottom-0 flex items-center text-[8px] font-black text-[#e8eaf6] leading-none">
-                        ⚠️ SOBRECARGA
+            if (rows.length === 0) return (
+              <p className="text-[10px] text-[#8b93b8] italic">Ningún miembro tiene tareas activas en este momento.</p>
+            );
+
+            return (
+              <div className="space-y-3">
+                {rows.map(({ u, total, inProg, inRev }) => {
+                  const barW = Math.round((total / maxActive) * 100);
+                  const inProgW = Math.round((inProg / maxActive) * 100);
+                  const inRevW  = Math.round((inRev  / maxActive) * 100);
+                  return (
+                    <div key={u.id} className="space-y-1">
+                      <div className="flex justify-between items-center text-xs">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: u.color }} />
+                          <span className="font-semibold text-[#e8eaf6]">{u.name}</span>
+                          <span className="text-[9px] text-[#8b93b8]">({u.role})</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-[9px]">
+                          <span className="text-[#4f7cff] font-semibold">{inProg} desar.</span>
+                          <span className="text-[#f5a623] font-semibold">{inRev} rev.</span>
+                          <span className="text-[#e8eaf6] font-bold">{total} total</span>
+                        </div>
                       </div>
-                    )}
-                  </div>
+                      <div className="h-3 bg-[#11151f] rounded-full overflow-hidden border border-[#2e3352]/20 flex">
+                        <div className="h-full bg-gradient-to-r from-[#4f7cff]/80 to-[#4f7cff] transition-all" style={{ width: `${inProgW}%` }} />
+                        <div className="h-full bg-gradient-to-r from-[#f5a623]/80 to-[#f5a623] transition-all" style={{ width: `${inRevW}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+                <div className="flex gap-4 mt-1 pt-2 border-t border-[#2e3352]/30">
+                  <div className="flex items-center gap-1.5 text-[9px] text-[#8b93b8]"><div className="w-2.5 h-2 rounded bg-[#4f7cff]" /> En desarrollo</div>
+                  <div className="flex items-center gap-1.5 text-[9px] text-[#8b93b8]"><div className="w-2.5 h-2 rounded bg-[#f5a623]" /> En revisión</div>
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            );
+          })()}
         </div>
 
         {/* Recursos Materiales e Infraestructura */}
@@ -749,46 +768,97 @@ export default function ReportsView({
 
       </div>
 
-      {/* ── SECCIÓN 5: Roadmap Hitos (Dashboard Fila 4) ── */}
+      {/* ── SECCIÓN 5: Timeline horizontal de hitos ── */}
       <div className="bg-[#1a1d27] border border-[#2e3352] rounded-xl p-5 shadow-xl print-card">
         <h2 className="text-xs font-bold text-[#e8eaf6] uppercase tracking-wider mb-4 border-b border-[#2e3352]/50 pb-2 flex items-center gap-1.5 print:text-black">
           <StoneIcon size={14} className="text-[#f5a623] print:text-black" />
-          Roadmap Estratégico de Metas
+          Timeline de metas del proyecto
         </h2>
 
-        <div className="relative pl-4 border-l border-[#2e3352] space-y-5 py-2">
-          {projMilestones_Gantt.map(ms => {
-            const colorMap = {
-              pending: "bg-yellow-500",
-              achieved: "bg-[#3ecf8e]",
-              background: "bg-[#ff5c5c]", // Correct missing mapped key
-              missed: "bg-[#ff5c5c]"
-            };
+        {projMilestones_Gantt.length === 0 ? (
+          <p className="text-[10px] text-[#8b93b8] italic">No hay metas declaradas para este proyecto.</p>
+        ) : (() => {
+          const projStart = new Date(activeProj.startDate + "T00:00:00").getTime();
+          const projEnd   = new Date(activeProj.endDate   + "T00:00:00").getTime();
+          const span      = projEnd - projStart || 1;
+          const nowPct    = Math.min(100, Math.max(0, ((now.getTime() - projStart) / span) * 100));
 
-            return (
-              <div key={ms.id} className="relative">
-                {/* Punto timeline */}
-                <div className={`absolute -left-[21px] top-1 w-2.5 h-2.5 rounded-full border-2 border-[#1a1d27] ${colorMap[ms.status]}`} />
-                
-                <div className="space-y-0.5">
-                  <div className="flex items-center justify-between gap-2 text-xs">
-                    <span className="font-bold text-[#e8eaf6] print:text-black">{ms.name}</span>
-                    <span className={`text-[8px] font-bold px-1.5 rounded uppercase ${ms.status === "achieved" ? "bg-[#3ecf8e]/10 text-[#3ecf8e]" : ms.status === "missed" ? "bg-[#ff5c5c]/10 text-[#ff5c5c]" : "bg-yellow-500/10 text-yellow-500"}`}>
-                      {ms.status === "achieved" ? "Listo" : ms.status === "missed" ? "Fallo" : "Pendiente"}
-                    </span>
-                  </div>
-                  <p className="text-[10px] text-[#8b93b8]">Fecha límite: {ms.targetDate}</p>
-                  {ms.description && (
-                    <p className="text-[10px] text-[#8b93b8] italic mt-1">"{ms.description}"</p>
-                  )}
+          const msWithPct = projMilestones_Gantt.map(ms => {
+            const t = new Date(ms.targetDate + "T00:00:00").getTime();
+            const pct = Math.min(100, Math.max(0, ((t - projStart) / span) * 100));
+            const color = ms.status === "achieved" ? "#3ecf8e" : ms.status === "missed" ? "#ff5c5c" : "#f5a623";
+            const label = ms.status === "achieved" ? "Logrado" : ms.status === "missed" ? "Fallido" : "Pendiente";
+            return { ...ms, pct, color, label };
+          });
+
+          return (
+            <div className="space-y-6 py-2">
+              {/* Barra del timeline */}
+              <div className="relative mx-4">
+                {/* Carril base */}
+                <div className="h-1.5 bg-[#2e3352] rounded-full relative">
+                  {/* Progreso actual hasta hoy */}
+                  <div
+                    className="absolute left-0 top-0 h-full bg-gradient-to-r from-[#4f7cff] to-[#7c5cfc] rounded-full"
+                    style={{ width: `${nowPct}%` }}
+                  />
+                  {/* Marcador de hoy */}
+                  <div
+                    className="absolute top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-[#f5a623] border-2 border-[#1a1d27] z-10"
+                    style={{ left: `${nowPct}%`, transform: "translate(-50%, -50%)" }}
+                    title="Hoy"
+                  />
+                  {/* Puntos de hitos */}
+                  {msWithPct.map((ms, idx) => (
+                    <div
+                      key={ms.id}
+                      className="absolute top-1/2 z-20"
+                      style={{ left: `${ms.pct}%`, transform: "translate(-50%, -50%)" }}
+                    >
+                      <div
+                        className="w-4 h-4 rounded-full border-2 border-[#1a1d27] shadow-lg"
+                        style={{ background: ms.color }}
+                        title={ms.name}
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                {/* Etiquetas de inicio y fin */}
+                <div className="flex justify-between text-[9px] text-[#8b93b8] mt-2">
+                  <span>{new Date(activeProj.startDate + "T00:00:00").toLocaleDateString("es-MX", { day: "2-digit", month: "short" })}</span>
+                  <span className="text-[#f5a623] font-semibold">HOY</span>
+                  <span>{new Date(activeProj.endDate + "T00:00:00").toLocaleDateString("es-MX", { day: "2-digit", month: "short", year: "numeric" })}</span>
                 </div>
               </div>
-            );
-          })}
-          {projMilestones_Gantt.length === 0 && (
-            <p className="text-[10px] text-[#8b93b8] italic">No hay metas declaradas para este proyecto.</p>
-          )}
-        </div>
+
+              {/* Lista de hitos con detalle */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {msWithPct.map(ms => {
+                  const diffDays = Math.round((new Date(ms.targetDate + "T00:00:00").getTime() - now.getTime()) / 86400000);
+                  const daysLabel = ms.status === "achieved" ? "✓ Completado"
+                    : diffDays < 0  ? `Vencido hace ${Math.abs(diffDays)} días`
+                    : diffDays === 0 ? "Vence hoy"
+                    : `Faltan ${diffDays} días`;
+                  return (
+                    <div key={ms.id} className="flex items-start gap-3 bg-[#11151f] rounded-lg p-3 border border-[#2e3352]/40">
+                      <div className="w-3 h-3 rounded-full flex-shrink-0 mt-0.5" style={{ background: ms.color }} />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="text-xs font-bold text-[#e8eaf6] truncate">{ms.name}</span>
+                          <span className="text-[8px] font-bold px-1.5 py-0.5 rounded uppercase flex-shrink-0" style={{ background: ms.color + "22", color: ms.color }}>{ms.label}</span>
+                        </div>
+                        <p className="text-[9px] text-[#8b93b8] mt-0.5">{new Date(ms.targetDate + "T00:00:00").toLocaleDateString("es-MX", { day: "2-digit", month: "long", year: "numeric" })}</p>
+                        <p className="text-[9px] font-semibold mt-0.5" style={{ color: ms.status === "achieved" ? "#3ecf8e" : diffDays < 0 ? "#ff5c5c" : diffDays === 0 ? "#f5a623" : "#8b93b8" }}>{daysLabel}</p>
+                        {ms.description && <p className="text-[9px] text-[#8b93b8] italic mt-0.5 truncate">"{ms.description}"</p>}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Modal para editar proyecto maestro */}
