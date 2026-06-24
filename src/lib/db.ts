@@ -431,19 +431,7 @@ async function runMigrations(pool: sql.ConnectionPool) {
     AND EXISTS (SELECT 1 FROM Proyectos_Gantt WHERE id='proj1')
     INSERT INTO Fases_Gantt (id,name,color,projectId) VALUES ('p5','Bloqueadas','#ff5c5c','proj1');`);
 
-  // ── Migrar emails viejos de royaltransports.com.mx a gmail.com ────────────
-  await step('migrate.email.rene', `
-    UPDATE Usuarios_Gantt SET email='renedejesusrangel228@gmail.com'
-    WHERE email='renerangel@royaltransports.com.mx';
-  `);
-  await step('migrate.email.jesus', `
-    UPDATE Usuarios_Gantt SET email='jesusrangel3@gmail.com'
-    WHERE email='jesus@royaltransports.com.mx';
-  `);
-  await step('migrate.email.domain', `
-    UPDATE Usuarios_Gantt SET email = REPLACE(email, '@royaltransports.com.mx', '@gmail.com')
-    WHERE email LIKE '%@royaltransports.com.mx';
-  `);
+  // Dominios válidos: @gmail.com y @royaltransports.com.mx
   await step('migrate.role.rene', `
     UPDATE Usuarios_Gantt SET role='Project Manager', status='active'
     WHERE email='renedejesusrangel228@gmail.com' AND role <> 'Project Manager';

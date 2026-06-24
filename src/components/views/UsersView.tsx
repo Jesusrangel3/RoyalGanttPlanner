@@ -155,7 +155,7 @@ export default function UsersView({
   async function removeUser(id: string) {
     if (!confirm("¿Eliminar este usuario del sistema?")) return;
     try {
-      await fetch(`/api/users_Gantt?id=${id}`, { method: 'DELETE' });
+      await fetch(`/api/users?id=${id}`, { method: 'DELETE' });
     } catch { /* fallback */ }
     setUsers((prev) => prev.filter((u) => u.id !== id));
     setEditUser(null);

@@ -898,7 +898,7 @@ export default function Home() {
     );
   }
 
-  const activeProj = Projects_Gantt.find((p) => p.id === activeProjectId) || Projects_Gantt[0] || mockProjects[0];
+  const activeProj = Projects_Gantt.find((p) => p.id === activeProjectId) || Projects_Gantt[0];
 
   const isPM = user?.role === "Project Manager";
 
@@ -917,6 +917,102 @@ export default function Home() {
   const safeActiveProj = visibleProjects.find(p => p.id === activeProjectId)
     ? activeProj
     : visibleProjects[0] || activeProj;
+
+  // Sin proyectos aún: pantalla de bienvenida
+  if (!safeActiveProj) {
+    return (
+      <div className="flex flex-col h-screen bg-[#0f1117] text-[#e8eaf6] items-center justify-center gap-6">
+        <div className="w-16 h-16 rounded-2xl overflow-hidden">
+          <img src="/RTransportmini.jpeg" alt="Royal" className="w-full h-full object-cover" />
+        </div>
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-2">Bienvenido a Royal Gantt Planner</h1>
+          <p className="text-[#8892b0] text-sm mb-6">No hay proyectos aún. Crea el primero para comenzar.</p>
+        </div>
+        {isPM && (
+          <button
+            onClick={() => setShowAddProject(true)}
+            className="px-6 py-3 bg-[#7c5cfc] hover:bg-[#6b4ef0] text-white font-semibold rounded-xl transition-colors"
+          >
+            + Crear primer proyecto
+          </button>
+        )}
+        {!isPM && (
+          <p className="text-[#8892b0] text-sm">Pide a tu Project Manager que cree un proyecto y te asigne tareas.</p>
+        )}
+
+        {/* Modal nuevo proyecto */}
+        {showAddProject && (
+          <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center" onClick={() => setShowAddProject(false)}>
+            <div className="bg-[#1a1d27] border border-[#2e3352] rounded-xl p-5 w-80 max-w-[95vw]" onClick={(e) => e.stopPropagation()}>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-semibold text-sm">Nuevo Proyecto Maestro</h3>
+                <button onClick={() => setShowAddProject(false)} className="text-[#8b93b8] hover:text-white">
+                  <X size={16} />
+                </button>
+              </div>
+              <div className="space-y-3">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] text-[#8b93b8] uppercase tracking-wider">Nombre del Proyecto</label>
+                  <input
+                    className="bg-[#22263a] border border-[#2e3352] text-[#e8eaf6] rounded-lg px-3 py-1.5 text-xs w-full focus:outline-none focus:border-[#4f7cff]"
+                    value={newProj.name}
+                    onChange={(e) => setNewProj((p) => ({ ...p, name: e.target.value }))}
+                    placeholder="Ej: Proyecto Logística Norte"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[10px] text-[#8b93b8] uppercase tracking-wider">Descripción</label>
+                  <textarea
+                    className="bg-[#22263a] border border-[#2e3352] text-[#e8eaf6] rounded-lg px-3 py-1.5 text-xs w-full focus:outline-none focus:border-[#4f7cff] resize-none"
+                    rows={2}
+                    value={newProj.description}
+                    onChange={(e) => setNewProj((p) => ({ ...p, description: e.target.value }))}
+                    placeholder="Descripción breve..."
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <div className="flex flex-col gap-1 flex-1">
+                    <label className="text-[10px] text-[#8b93b8] uppercase tracking-wider">Inicio</label>
+                    <input
+                      type="date"
+                      className="bg-[#22263a] border border-[#2e3352] text-[#e8eaf6] rounded-lg px-2 py-1.5 text-xs w-full focus:outline-none"
+                      value={newProj.startDate}
+                      onChange={(e) => setNewProj((p) => ({ ...p, startDate: e.target.value }))}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1 flex-1">
+                    <label className="text-[10px] text-[#8b93b8] uppercase tracking-wider">Fin</label>
+                    <input
+                      type="date"
+                      className="bg-[#22263a] border border-[#2e3352] text-[#e8eaf6] rounded-lg px-2 py-1.5 text-xs w-full focus:outline-none"
+                      value={newProj.endDate}
+                      onChange={(e) => setNewProj((p) => ({ ...p, endDate: e.target.value }))}
+                    />
+                  </div>
+                </div>
+              </div>
+              <div className="flex gap-2 justify-end mt-4">
+                <button
+                  className="px-3 py-1.5 rounded-lg border border-[#2e3352] bg-[#22263a] text-[#e8eaf6] text-xs font-medium hover:border-[#4f7cff] transition-all cursor-pointer"
+                  onClick={() => setShowAddProject(false)}
+                >
+                  Cancelar
+                </button>
+                <button
+                  className="px-3 py-1.5 rounded-lg bg-[#4f7cff] text-white text-xs font-medium hover:bg-[#3a6be0] transition-all cursor-pointer disabled:opacity-50 disabled:pointer-events-none"
+                  onClick={handleAddProject}
+                  disabled={isSyncing}
+                >
+                  {isSyncing ? "Guardando..." : "Crear Proyecto"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   const projectTasks = tasks.filter((t) => t.projectId === safeActiveProj.id);
   const projectMilestones_Gantt = Milestones_Gantt.filter((m) => m.projectId === safeActiveProj.id);

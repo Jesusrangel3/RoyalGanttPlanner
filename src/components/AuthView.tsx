@@ -36,7 +36,7 @@ export default function AuthView({ onSuccess, theme = "dark" }: AuthViewProps) {
     resetMessages();
 
     if (!validateInstitutionalEmail(email)) {
-      setError("Ingrese un correo institucional válido de gmail.com.");
+      setError("Ingrese un correo válido (@gmail.com o @royaltransports.com.mx).");
       return;
     }
 
@@ -87,7 +87,7 @@ export default function AuthView({ onSuccess, theme = "dark" }: AuthViewProps) {
                     ? "border-[#2f3336] bg-[#000000] text-white placeholder-[#536471] focus:border-[#4f7cff] focus:ring-[#4f7cff]"
                     : "border-[#cbd5e1] bg-white text-[#0f172a] placeholder-[#94a3b8] focus:border-[#3b82f6] focus:ring-[#3b82f6]"
                 }`}
-                placeholder="usuario@gmail.com"
+                placeholder="usuario@royaltransports.com.mx"
                 required
               />
             </div>
@@ -146,7 +146,7 @@ export default function AuthView({ onSuccess, theme = "dark" }: AuthViewProps) {
 
       <div className={`mt-8 border-t pt-6 text-center ${isDark ? "border-[#2f3336]/40" : "border-slate-200"}`}>
         <p className={`text-xs leading-relaxed ${isDark ? "text-[#71767b]" : "text-slate-500"}`}>
-          Usa tu correo institucional de <span className={isDark ? "text-[#e8eaf6]" : "text-[#0f172a] font-semibold"}>gmail.com</span> y tu contraseña para acceder.
+          Usa tu correo institucional <span className={isDark ? "text-[#e8eaf6]" : "text-[#0f172a] font-semibold"}>@royaltransports.com.mx</span> o <span className={isDark ? "text-[#e8eaf6]" : "text-[#0f172a] font-semibold"}>@gmail.com</span> y tu contraseña para acceder.
         </p>
       </div>
     </div>

@@ -9,7 +9,7 @@ export type AuthUser = User & {
 };
 
 const STORAGE_SESSION_KEY = "ganttpro-auth-session";
-const INSTITUTIONAL_DOMAIN = "gmail.com";
+const ALLOWED_DOMAINS = ["gmail.com", "royaltransports.com.mx"];
 
 // ── Validación de Entrada ────────────────────────────
 
@@ -87,7 +87,7 @@ export function clearSession() {
 export function validateInstitutionalEmail(email: string): boolean {
   const normalized = email.trim().toLowerCase();
   if (!isValidEmail(normalized)) return false;
-  return normalized.endsWith(`@${INSTITUTIONAL_DOMAIN}`);
+  return ALLOWED_DOMAINS.some(domain => normalized.endsWith(`@${domain}`));
 }
 
 // ── Solicitudes de Autenticación a API ────────────────
@@ -147,7 +147,7 @@ export async function registerUser(payload: {
     }
     
     if (!validateInstitutionalEmail(email)) {
-      return { error: `El correo debe ser institucional @${INSTITUTIONAL_DOMAIN}.` };
+      return { error: `El correo debe ser institucional (@gmail.com o @royaltransports.com.mx).` };
     }
     
     if (!isStrongPassword(payload.password)) {
